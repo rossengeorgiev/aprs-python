@@ -9,8 +9,9 @@ import logging
 
 
 logger = logging.getLogger(__name__)
+logging.addLevelName(11, "ParseError")
 
-__all__ = ['IS', 'GenericError', 'ParseError',
+__all__ = ['IS', 'GenericError', 'ParseError', 'UnknownFormat',
            'LoginError', 'ConnectionError', 'ConnectionDrop', 'parse']
 
 # IS class is used to connect to aprs-is servers and listen to the feed
@@ -127,8 +128,6 @@ class IS(object):
                             callback(line)
                         else:
                             callback(parse(line))
-                    #else:
-                    #     print "Server: %s" % line
             except KeyboardInterrupt:
                 raise
             except (ConnectionDrop, ConnectionError):
@@ -255,63 +254,59 @@ def parse(raw_sentence):
 
     logger.debug("Parsing: %s" % raw_sentence)
 
-    if len(raw_sentence) < 14:
-        raise ParseError("packet is too short to be valid", raw_sentence)
+    if len(raw_sentence) == 0:
+        raise ParseError("packet is empty", raw_sentence)
 
-    (header, body) = raw_sentence.split(':',1)
-    (fromcall, path) = header.split('>',1)
+    try:
+        (header, body) = raw_sentence.split(':',1)
+    except:
+        raise ParseError("packet has no body", raw_sentence)
+
+    if len(body) == 0:
+        raise ParseError("packet body is empty", raw_sentence)
+
+    if not re.match(r"^[ -~]+$", header):
+        raise ParseError("packet header contains non-ascii characters ", raw_sentence)
+
+    try:
+        (fromcall, path) = header.split('>',1)
+    except:
+        raise ParseError("invalid packet header", raw_sentence)
 
     # TODO: validate callsigns??
 
     path = path.split(',')
+
+    if len(path) < 1 or len(path[0]) == 0:
+        raise ParseError("no tocallsign", raw_sentence)
+
     tocall  = path[0]
     path = path[1:]
-
-    viacall = path[-1] if re.match(r"^qA[CXUoOSrRRZI]$", path[-2]) else ""
 
     parsed = {
                 'raw': raw_sentence,
                 'from': fromcall,
                 'to': tocall,
-                'via': viacall,
                 'path': path,
-                'parsed': False
              }
+
+    try:
+        viacall = path[-1] if re.match(r"^qA[CXUoOSrRRZI]$", path[-2]) else ""
+        parsed.update({ 'via': viacall })
+    except:
+        pass
 
     packet_type = body[0]
     body = body[1:]
 
+    if len(body) == 0 and packet_type != '>':
+        raise ParseError("packet body is empty after packet type character", raw_sentence)
+
     # attempt to parse the body
     # ------------------------------------------------------------------------------
 
-    # Mic-encoded packet
-    #
-    # 'lllc/s$/.........         Mic-E no message capability
-    # 'lllc/s$/>........         Mic-E message capability
-    # `lllc/s$/>........         Mic-E old posit
-
-    if packet_type in ("`","'"):
-        raise ParseError("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
-
-    # STATUS PACKET
-    #
-    # >DDHHMMzComments
-    # >Comments
-
-    elif packet_type == '>':
-        raise ParseError("status messages are not supported", raw_sentence)
-
-    # postion report (regular or compressed)
-    #
-    # !DDMM.hhN/DDDMM.hhW$...                           POSIT ( no APRS)
-    # =DDMM.hhN/DDDMM.hhW$...                           POSIT (APRS message capable)
-    # /DDHHMM/DDMM.hhN/DDDMM.hhW$...                    Time of last fix (No APRS)
-    # @DDHHMM/DDMM.hhN/DDDMM.hhW$CSE/SPD/...            Moving (with APRS)
-    # @DDHHMM/DDMM.hhN/DDDMM.hhW\CSE/SPD/BRG/NRQ/....   DF report
-    # ./YYYYXXXX$csT                                    Compressed (Used in any !=/@ format)
-
-    elif packet_type in ('!','=','/','@'):
-
+    # try and parse timestamp first for status and position reports
+    if packet_type in '>/@':
         # try to parse timestamp
         ts = re.findall(r"^[0-9]{6}[hz\/]$", body[0:7])
         form = ''
@@ -320,6 +315,11 @@ def parse(raw_sentence):
             form = ts[6]
             ts = ts[0:6]
             utc = datetime.datetime.utcnow()
+
+            if packet_type == '>' and form != 'z':
+                raise ParseError("Time format for status reports should be zulu")
+
+            parsed.update({ 'raw_timestamp': ts })
 
             try:
                 if form == 'h': # zulu hhmmss format
@@ -336,12 +336,46 @@ def parse(raw_sentence):
             # remove datetime from the body for further parsing
             body = body[7:]
 
+    # Mic-encoded packet
+    #
+    # 'lllc/s$/.........         Mic-E no message capability
+    # 'lllc/s$/>........         Mic-E message capability
+    # `lllc/s$/>........         Mic-E old posit
+
+    if packet_type in "`'":
+        raise UnknownFormat("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
+
+    # STATUS PACKET
+    #
+    # >DDHHMMzComments
+    # >Comments
+
+    elif packet_type == '>':
+        parsed.update({'format': 'status', 'comment': body })
+
+    # postion report (regular or compressed)
+    #
+    # !DDMM.hhN/DDDMM.hhW$...                           POSIT ( no APRS)
+    # =DDMM.hhN/DDDMM.hhW$...                           POSIT (APRS message capable)
+    # /DDHHMM/DDMM.hhN/DDDMM.hhW$...                    Time of last fix (No APRS)
+    # @DDHHMM/DDMM.hhN/DDDMM.hhW$CSE/SPD/...            Moving (with APRS)
+    # @DDHHMM/DDMM.hhN/DDDMM.hhW\CSE/SPD/BRG/NRQ/....   DF report
+    # ./YYYYXXXX$csT                                    Compressed (Used in any !=/@ format)
+
+    elif packet_type in '!=/@':
+        parsed.update({ "messagecapable": packet_type in '@=' })
+
+        if len(body) == 0 and 'timestamp' in parsed:
+            raise ParseError("invalid position report format", raw_sentence)
+
         # comprossed packets start with /
-        if body[0] == "/":
+        if re.match(r"^[\/\\A-Za-j][!-|]{8}[!-{}][ -|]{3}", body):
             logger.debug("Attempting to parse as compressed position report")
 
             if len(body) < 13:
-                raise ParseError("Invalid compressed packet (less than 13 characters)")
+                raise ParseError("Invalid compressed packet (less than 13 characters)", raw_sentence)
+
+            parsed.update({ 'format': 'compressed' })
 
             packet = body[:13]
             extra = body[13:]
@@ -378,6 +412,7 @@ def parse(raw_sentence):
         # normal position report
         else:
             logger.debug("Attempting to parse as normal position report")
+            parsed.update({ 'format': 'uncompressed' })
 
             try:
                 (
@@ -408,8 +443,8 @@ def parse(raw_sentence):
                 latitude = int(lat_deg) + ( float(lat_min) / 60.0 )
                 longitude = int(lon_deg) + ( float(lon_min) / 60.0 )
 
-                latitude *= -1 if lat_dir in ['S','s'] else 1
-                longitude *= -1 if lon_dir in ['W','w'] else 1
+                latitude *= -1 if lat_dir in 'Ss' else 1
+                longitude *= -1 if lon_dir in 'Ww' else 1
 
             except Exception, e:
                 # failed to match normal sentence sentence
@@ -474,9 +509,8 @@ def parse(raw_sentence):
 
 
         parsed.update({'comment': extra})
-        parsed.update({'parsed': True})
     else:
-        raise ParseError("format is not supported", raw_sentence)
+        raise UnknownFormat("format is not supported", raw_sentence)
 
     logger.debug("Parsed ok.")
     return parsed
@@ -491,11 +525,16 @@ class GenericError(Exception):
     def __str__(self):
         return self.message
 
+class UnknownFormat(GenericError):
+    def __init__(self, message, packet=''):
+        logger.log(9, "%s\nPacket: %s" % (message, packet))
+        self.message = message
+        self.packet = packet
+
 class ParseError(GenericError):
-    def __init__(self, msg, packet=''):
-        #logger.error("Raw:" + packet)
-        #logger.error(msg)
-        GenericError.__init__(self, msg)
+    def __init__(self, message, packet=''):
+        logger.log(11, "%s\nPacket: %s" % (message, packet))
+        self.message = message
         self.packet = packet
 
 class LoginError(GenericError):
