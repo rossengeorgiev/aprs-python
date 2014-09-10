@@ -5,16 +5,17 @@ import time
 import datetime
 import re
 import math
-import copy
 import logging
 
 
-logger = logging.getLogger("APRS")
+logger = logging.getLogger(__name__)
 
-__all__ = ['APRS', 'GenericError', 'ParseError',
-           'LoginError', 'ConnectionError', 'ConnectionDrop']
+__all__ = ['IS', 'GenericError', 'ParseError',
+           'LoginError', 'ConnectionError', 'ConnectionDrop', 'parse']
 
-class APRS(object):
+# IS class is used to connect to aprs-is servers and listen to the feed
+
+class IS(object):
     def __init__(self, host, port, callsign, passwd):
         """
         APRS module that listens and parses sentences passed by aprs.net servers
@@ -125,7 +126,7 @@ class APRS(object):
                         if raw:
                             callback(line)
                         else:
-                            callback(self._parse(line))
+                            callback(parse(line))
                     #else:
                     #     print "Server: %s" % line
             except KeyboardInterrupt:
@@ -242,198 +243,141 @@ class APRS(object):
             if blocking:
                 time.sleep(0.5)
 
-    def _get_viacall(self, path):
-        # VIACALL is always after q construct
-        if re.match(r"^qA[CXUoOSrRRZI]$", path[-2]):
-            return path[-1]
+
+# parse a single packet
+# throws expcetions
+
+def parse(raw_sentence):
+    """
+    Parses position sentences and returns a dict with the useful data
+    All attributes are in meteric units
+    """
+
+    logger.debug("Parsing: %s" % raw_sentence)
+
+    if len(raw_sentence) < 14:
+        raise ParseError("packet is too short to be valid", raw_sentence)
+
+    (header, body) = raw_sentence.split(':',1)
+    (fromcall, path) = header.split('>',1)
+
+    # TODO: validate callsigns??
+
+    path = path.split(',')
+    tocall  = path[0]
+    path = path[1:]
+
+    viacall = path[-1] if re.match(r"^qA[CXUoOSrRRZI]$", path[-2]) else ""
+
+    parsed = {
+                'raw': raw_sentence,
+                'from': fromcall,
+                'to': tocall,
+                'via': viacall,
+                'path': path,
+                'parsed': False
+             }
+
+    packet_type = body[0]
+    body = body[1:]
+
+    # attempt to parse the body
+    # ------------------------------------------------------------------------------
+
+    # Mic-encoded packet
+    #
+    # 'lllc/s$/.........         Mic-E no message capability
+    # 'lllc/s$/>........         Mic-E message capability
+    # `lllc/s$/>........         Mic-E old posit
+
+    if packet_type in ("`","'"):
+        raise ParseError("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
+
+    # STATUS PACKET
+    #
+    # >DDHHMMzComments
+    # >Comments
+
+    elif packet_type == '>':
+        raise ParseError("status messages are not supported", raw_sentence)
+
+    # postion report (regular or compressed)
+    #
+    # !DDMM.hhN/DDDMM.hhW$...                           POSIT ( no APRS)
+    # =DDMM.hhN/DDDMM.hhW$...                           POSIT (APRS message capable)
+    # /DDHHMM/DDMM.hhN/DDDMM.hhW$...                    Time of last fix (No APRS)
+    # @DDHHMM/DDMM.hhN/DDDMM.hhW$CSE/SPD/...            Moving (with APRS)
+    # @DDHHMM/DDMM.hhN/DDDMM.hhW\CSE/SPD/BRG/NRQ/....   DF report
+    # ./YYYYXXXX$csT                                    Compressed (Used in any !=/@ format)
+
+    elif packet_type in ('!','=','/','@'):
+
+        # try to parse timestamp
+        ts = re.findall(r"^[0-9]{6}[hz\/]$", body[0:7])
+        form = ''
+        if ts:
+            ts = ts[0]
+            form = ts[6]
+            ts = ts[0:6]
+            utc = datetime.datetime.utcnow()
+
+            try:
+                if form == 'h': # zulu hhmmss format
+                    timestamp = utc.strptime("%s %s %s %s" % (utc.year, utc.month, utc.day, ts), "%Y %m %d %H%M%S")
+                elif form == 'z': # zulu ddhhss format
+                    timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
+                else: # '/' local ddhhss format
+                    timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
+            except:
+                raise ParseError("Invalid time", raw_sentence)
+
+            parsed.update({ 'timestamp': timestamp.isoformat() + ('Z' if form not in 'hz' else '') })
+
+            # remove datetime from the body for further parsing
+            body = body[7:]
+
+        # comprossed packets start with /
+        if body[0] == "/":
+            logger.debug("Attempting to parse as compressed position report")
+
+            if len(body) < 13:
+                raise ParseError("Invalid compressed packet (less than 13 characters)")
+
+            packet = body[:13]
+            extra = body[13:]
+
+            symbol_table = packet[0]
+            symbol = packet[9]
+
+            packet = [ord(x) - 33 for x in packet]
+
+            for idx in range(1,9):
+               packet[idx] *= math.pow(91, 4 - idx%4) if idx % 4 != 0 else 1
+
+            latitude = 90 - (sum(packet[1:4]) / 380926)
+            longitude = -180 + (sum(packet[5:9]) / 190463)
+
+            # parse csT
+
+            c1,s1,ctype = packet[10:13]
+
+            if c1 == -1:
+                parsed.update({'gpsfixstatus': 1 if ctype & 0x20 == 0x20 else 0})
+
+            if -1 in [c1, s1]:
+                pass
+            elif ctype & 0x18 == 0x10:
+                parsed.update({'altitude': (1.002 ** (c1 * 91 + s1)) * 0.3048})
+            elif c1 >= 0 and c1 <= 89:
+                parsed.update({'course': 360 if c1 == 0 else c1 * 4 })
+                parsed.update({'speed': (1.08 ** s1 - 1) * 1.852 }) # mul = convert knts to kmh
+            elif c1 == 90:
+                parsed.update({'radiorange': (2 * 1.08 ** s1) * 1.609344 }) # mul = convert mph to kmh
+
+
+        # normal position report
         else:
-            return ""
-
-    def _parse(self, raw_sentence):
-        """
-        Parses position sentences and returns a dict with the useful data
-        All attributes are in meteric units
-
-        Supported formats:
-            FIXED:
-                .......!DDMM.hhN/DDDMM.hhW$comments...   (fixed short format)
-                       =DDMM.hhN/DDDMM.hhW$comments      (message capable)
-                /DDHHMM/DDMM.hhN/DDDMM.hhW$comments...   (no APRS is running)
-            MOBILE:
-                @DDHHMM/DDMM.hhN/DDDMM.hhW$CSE/SPD/comments...
-            DF:
-                @DDHHMM/DDMM.hhN/DDDMM.hhWCSE/SPD/BRG/NRQ/Comments
-                .......z............................. (indicates Zulu date-time)
-                ......./............................. (indicates LOCAL date-time)
-                .......h............................. (Zulu time in hhmmss)
-
-            OBJECT (NOT SUPPORTED):
-                ;OBJECT___*DDHHMMzDDMM.hhN/DDDMM.hhW$CSE/SPD/comments...
-                +OBJECT___*DDHHMMzDDMM.hhN/DDDMM.hhW$CSE/SPD/comments...  dos Internal
-                -OBJECT___*DDHHMMzDDMM.hhN/DDDMM.hhW$CSE/SPD/comments...  Kill object
-                _OBJECT___*ditto  Internal by APRS DOS showing object was killed
-                ;AREAOBJ__*DDHHMMzDDMM.hhN/DDDMM.hhWlTyy/Cxx/comments...{width
-
-            ITEMS (NOT SUPPORTED):
-                )ITEM!DDMM.hhN/DDDMM.hhW$...
-
-            MIC-E (NOT SUPPORTED):
-               'lllc/s$/.........         Mic-E no message capability
-               'lllc/s$/>........         Mic-E message capability
-               `lllc/s$/>........         Mic-E old posit
-
-            NMAE: (NOT SUPPORTED)
-                $GPRMC,151447,A,4034.5189,N,10424.4955,W,6.474,132.5,220406,10.1,E*58
-
-                    1  Time Stamp
-                    2  validity - A-ok, V-invalid
-                    3  current Latitude
-                    4  North/South
-                    5  current Longitude
-                    6  East/West
-                    7  Speed in knots
-                    8  True course
-                    9  Date Stamp
-                    10 Variation
-                    11 East/West
-                    12 checksum
-
-                $GPGGA,151449,4034.5163,N,10424.4937,W,1,06,1.41,21475.8,M,-21.8,M,,*4D
-
-                    1  UTC of Position
-                    2  Latitude
-                    3  N or S
-                    4  Longitude
-                    5  E or W
-                    6  GPS quality indicator (0=invalid; 1=GPS fix; 2=Diff. GPS fix)
-                    7  Number of satellites in use [not those in view]
-                    8  Horizontal dilution of position
-                    9  Antenna altitude above/below mean sea level (geoid)
-                    10 Meters  (Antenna height unit)
-                    11 Geoidal separation (Diff. between WGS-84 earth ellipsoid and
-                       mean sea level.  -=geoid is below WGS-84 ellipsoid)
-                    12 Meters  (Units of geoidal separation)
-                    13 Age in seconds since last update from diff. reference station
-                    14 Diff. reference station ID#
-                    15 Checksum
-
-            uBlox: (NOT SUPPORTED)
-                 $PUBX,00,081350.00,4717.113210,N,00833.915187,E,546.589,G3,2.1,2.0,0.007,77.52,0.007,,0.92,1.19,0.77,9,0,0*5F
-                 $PUBX,00,hhmmss.ss,Latitude,N,Longitude,E,AltRef,NavStat,Hacc,Vacc,SOG,COG,Vvel,+ageC,HDOP,VDOP,TDOP,GU,RU,DR,*hh
-                 $PUBX,01,hhmmss.ss,Easting,E,Northing,N,AltMSL,NavStat,Hacc,Vacc,SOG,COG,Vvel,ag+eC,HDOP,VDOP,TDOP,GU,RU,DR,*hh
-
-                    $PUBX       - Message ID, UBX protocol header, proprietary sentence
-                    00          - Propietary message identifier: 00
-                    hhmmss.ss   - UTC Time, Current time
-                    ddmm.mmmm   - Latitude, Degrees + minutes
-                    [NS]        - N/S Indicator,
-                    dddmm.mmmm  - Longitude, Degrees + minutes
-                    [EW]        - E/W Indicator,
-                    546.589     - (meters) Altitude above user datum ellipsoid.
-                    G3          - Navigation Status, See Table below
-                    2.1         - Horizontal accuracy estimate.
-                    2.0         - Vertical accuracy estimate.
-                    0.007       - Speed over ground
-                    77.52       - Course over ground
-                    0.007       - (m/s) Vertical velocity, positive=downwards
-                    -           - Age of most recent DGPS corrections, empty = none available
-                    0.92        - HDOP, Horizontal Dilution of Precision
-                    1.19        - VDOP, Vertical Dilution of Precision
-                    0.77        - TDOP, Time Dilution of Precision
-                    9           - Number of GPS satellites used in the navigation solution
-                    0           - Number of GLONASS satellites used in the navigation solution
-                    0           - DR used
-                    *5B         - Checksum
-
-                    Navigation Status
-                    -----------------
-                    NF No Fix
-                    DR Predictive Dead Reckoning Solution
-                    G2 Stand alone 2D solution
-                    G3 Stand alone 3D solution
-                    D2 Differential 2D solution
-                    D3 Differential 3D solution
-
-            Custom:
-                @DDHHMMhDDMM.hhN/DDDMM.hhWO234/038/A=001563
-
-                    course: 234 degrees
-                    speed: 38 kntos
-                    altitude: 1563 feet
-        """
-
-        logger.debug("Parsing: %s" % raw_sentence)
-
-        if len(raw_sentence) < 14:
-            raise ParseError("packet is too short to be valid", raw_sentence)
-
-        (header, body) = raw_sentence.split(':',1)
-        (fromcall, path) = header.split('>',1)
-
-        # TODO: validate callsigns??
-
-        path = path.split(',')
-        tocall  = path[0]
-        path = path[1:]
-        viacall = self._get_viacall(path)
-
-        parsed = {
-                    'raw': raw_sentence,
-                    'from': fromcall,
-                    'to': tocall,
-                    'via': viacall,
-                    'path': path,
-                    'parsed': False
-                 }
-
-        packet_type = body[0]
-        body = body[1:]
-
-        # attempt to parse the body
-
-        # Mic-encoded packet
-        #
-        # 'lllc/s$/.........         Mic-E no message capability
-        # 'lllc/s$/>........         Mic-E message capability
-        # `lllc/s$/>........         Mic-E old posit
-
-        if packet_type in ("`","'"):
-            raise ParseError("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
-
-        # STATUS PACKET
-        #
-        # >DDHHMMzComments
-        # >Comments
-
-        elif packet_type == '>':
-            raise ParseError("status messages are not supported", raw_sentence)
-
-        # postion report (regular or compressed)
-        elif packet_type in ('!','=','/','@'):
-
-            # try to parse timestamp
-            ts = re.findall(r"^[0-9]{6}[hz\/]$", body[0:7])
-            form = ''
-            if ts:
-                ts = ts[0]
-                form = ts[6]
-                ts = ts[0:6]
-                utc = datetime.datetime.utcnow()
-
-                try:
-                    if form == 'h': # zulu hhmmss format
-                        timestamp = utc.strptime("%s %s %s %s" % (utc.year, utc.month, utc.day, ts), "%Y %m %d %H%M%S")
-                    elif form == 'z': # zulu ddhhss format
-                        timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
-                    else: # '/' local ddhhss format (corrected via longitude further down)
-                        timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
-                except:
-                    raise ParseError("Invalid time", raw_sentence)
-
-                parsed.update({ 'timestamp': timestamp.isoformat() + 'Z' })
-
-                # remove datetime from the body for further parsing
-                body = body[7:]
+            logger.debug("Attempting to parse as normal position report")
 
             try:
                 (
@@ -445,22 +389,10 @@ class APRS(object):
                 lon_min,
                 lon_dir,
                 symbol,
-                comment
+                extra
                 ) = re.match(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{2})([NnSs])([\/\\0-9A-Z])(\d{3})([0-9 ]{2}\.[0-9 ]{2})([EeWw])([\x21-\x7e])(.*)$", body).groups()
 
-                logger.debug("Parsing as normal uncompressed format")
-
-                # optional format extention - bearing, speed and altitude (feet)
-                extra = re.findall(r"^([0-9]{3})/([0-9]{3})(/A=([0-9]{6})/?)?(.*)$", comment)
-
-                if extra:
-                    (bearing, speed, empty, altitude, comment) = extra[0]
-
-                    parsed.update({ 'bearing': int(bearing), 'speed': int(speed)*0.514444 })
-                    if altitude:
-                        parsed.update({ 'altitude': int(altitude)*0.3048 })
-
-                parsed.update({ 'symbol': symbol, 'symbol_table': symbol_table })
+                # validate longitude and latitude
 
                 if int(lat_deg) > 89 or int(lat_deg) < 0:
                     raise ParseError("latitude is out of range (0-90 degrees)", raw_sentence)
@@ -471,6 +403,7 @@ class APRS(object):
                 if float(lon_min) >= 60:
                     raise ParseError("longitude minutes are out of range (0-60)", raw_sentence)
 
+                # convert coordinates from DDMM.MM to decimal
 
                 latitude = int(lat_deg) + ( float(lat_min) / 60.0 )
                 longitude = int(lon_deg) + ( float(lon_min) / 60.0 )
@@ -478,22 +411,75 @@ class APRS(object):
                 latitude *= -1 if lat_dir in ['S','s'] else 1
                 longitude *= -1 if lon_dir in ['W','w'] else 1
 
-                parsed.update({'latitude': latitude, 'longitude': longitude})
-
-                # once we have latitude, and we can aproximate local timezone for dateless format
-                if form not in ('h','z',''):
-                    timestamp = timestamp + datetime.timedelta(hours=math.floor(parsed['latitude']/7.5))
-                    parsed['timestamp'] = "%sZ" % timestamp.isoformat()
-
-                parsed.update({'parsed': True})
             except Exception, e:
                 # failed to match normal sentence sentence
-                raise ParseError("unknown or invalid format", raw_sentence)
-        else:
-            raise ParseError("format is not supported", raw_sentence)
+                raise ParseError("invalid format", raw_sentence)
 
-        logger.debug("Parsed ok.")
-        return parsed
+        # include symbol in the result
+
+        parsed.update({ 'symbol': symbol, 'symbol_table': symbol_table })
+
+        # include longitude and latitude in the result
+
+        parsed.update({'latitude': latitude, 'longitude': longitude})
+
+        # attempt to parse remaining part of the packet (comment field)
+
+        # try CRS/SPD/
+
+        match  = re.findall(r"^([0-9]{3})/([0-9]{3})/", extra)
+        if match:
+            cse, spd = match[0]
+            extra = extra[8:]
+            parsed.update({'course': int(cse), 'speed': int(spd)*1.852}) # knots to kms
+
+            # try BRG/NRQ/
+            match  = re.findall(r"^([0-9]{3})/([0-9]{3})/", extra)
+            if match:
+                brg, nrq = match[0]
+                extra = extra[8:]
+                parsed.update({'bearing': int(brg), 'nrq': int(nrq)})
+
+        #TODO parse PHG
+
+        # try find altitude in comment /A=dddddd
+        match = re.findall(r"^(.*?)/A=([\-0-9]{6})(.*)$", extra)
+
+        if match:
+            extra,altitude,post = match[0]
+            extra += post # glue front and back part together, DONT ASK
+
+            parsed.update({ 'altitude': int(altitude)*0.3048 })
+
+        # try parse comment telemetry
+        match = re.findall(r"^(.*?)\|(([!-{]{2}){2,5})\|(.*)$", extra)
+        if match:
+            extra,telemetry,junk,post = match[0]
+            extra += post
+
+            temp = []
+            for i in range(7):
+                temp.append('')
+
+                try:
+                    temp[i] = (ord(telemetry[i*2]) - 33) * 91
+                    temp[i] += ord(telemetry[i*2 + 1]) - 33
+                except:
+                    continue
+
+            parsed.update({'telemetry': {'seq': temp[0], 'vals': temp[1:6]}})
+
+            if temp[6] != '':
+                parsed['telemetry'].update({'bits': "{0:b}" % temp[7]})
+
+
+        parsed.update({'comment': extra})
+        parsed.update({'parsed': True})
+    else:
+        raise ParseError("format is not supported", raw_sentence)
+
+    logger.debug("Parsed ok.")
+    return parsed
 
 
 # Exceptions
