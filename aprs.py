@@ -147,6 +147,7 @@ class IS(object):
                 #    raise
                 #logger.exception(e)
                 #continue
+                logger.error("APRS Packet: " + line)
                 raise
 
             if not blocking:
