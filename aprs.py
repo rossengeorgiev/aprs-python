@@ -345,6 +345,67 @@ def parse(raw_sentence):
 
     if packet_type in "`'":
         raise UnknownFormat("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
+        logger.debug("Attempting to parse as mic-e packet")
+        parsed.update({'format': 'mic-e'})
+
+        dstcall = tocall.split('-')[0]
+
+        # verify mic-e format
+        if len(dstcall) != 6:
+            raise ParseError("dstcall has to be 6 characters")
+        if len(body) < 8:
+            raise ParseError("packet data field is too short")
+        if not re.match(r"^[0-9A-Z]{3}[0-9L-Z]{3}$", dstcall):
+            raise ParseError("invalid dstcall")
+        if not re.match(r"^[&-\x7f][&-a][\x1c-\x7f]{2}[\x1c-\x7d][\x1c-\x7f][\x21-\x7e][\/\\0-9A-Z]", body):
+            raise ParseError("invalid data format")
+
+        # get symbol table and symbol
+        parsed.update({ 'symbol': body[6], 'symbol_table': body[7] })
+
+        dstcall = "T20000"
+        # parse latitude
+        tmpdstcall = ""
+        for i in dstcall:
+            if i in "KLZ":
+                tmpdstcall += " "
+            elif ord(i) > 76:
+                tmpdstcall += chr(ord(i) - 32)
+            elif ord(i) > 57:
+                tmpdstcall += chr(ord(i) - 16)
+            else:
+                tmpdstcall += i
+
+        # determine position ambiguity
+        match = re.findall(r"^\d+( *)$", tmpdstcall)
+        if not match:
+            raise ParseError("invalid latitude ambiguity")
+
+        posambiguity = len(match[0])
+        parsed.update({ 'posambiguity': posambiguity })
+
+        # adjust the coordinates be in center of ambiguity box
+        tmpdstcall = list(tmpdstcall)
+        if posambiguity > 0:
+            if posambiguity >= 4:
+                tmpdstcall[2] = '3'
+            else:
+                tmpdstcall[6 - posambiguity] = '5'
+
+        tmpdstcall = "".join(tmpdstcall)
+
+        latminutes = float( ("%s.%s" % (tmpdstcall[2:4], tmpdstcall[4:6])).replace(" ", "0") )
+
+        if latminutes >= 60:
+            raise PraseError("Latitude minutes >= 60")
+
+        latitude = int(tmpdstcall[0:2]) + (latminutes / 60)
+
+        # determine the sign N/S
+        latitude = -latitude if ord(dstcall[3]) <= 0x4c else latitude
+
+        parsed.update({ 'latitude': latitude })
+
 
     # STATUS PACKET
     #
