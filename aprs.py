@@ -540,7 +540,7 @@ def parse(raw_sentence):
         #TODO parse PHG
 
         # try find altitude in comment /A=dddddd
-        match = re.findall(r"^(.*?)/A=([\-0-9]{6})(.*)$", extra)
+        match = re.findall(r"^(.*?)/A=(\-\d{5}|\d{6})(.*)$", extra)
 
         if match:
             extra,altitude,post = match[0]
