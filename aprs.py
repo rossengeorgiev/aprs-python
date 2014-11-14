@@ -524,17 +524,17 @@ def parse(raw_sentence):
 
         # try CRS/SPD/
 
-        match  = re.findall(r"^([0-9]{3})/([0-9]{3})/", extra)
+        match  = re.findall(r"^([0-9]{3})/([0-9]{3})", extra)
         if match:
             cse, spd = match[0]
-            extra = extra[8:]
+            extra = extra[7:]
             parsed.update({'course': int(cse), 'speed': int(spd)*1.852}) # knots to kms
 
             # try BRG/NRQ/
-            match  = re.findall(r"^([0-9]{3})/([0-9]{3})/", extra)
+            match  = re.findall(r"^([0-9]{3})/([0-9]{3})", extra)
             if match:
                 brg, nrq = match[0]
-                extra = extra[8:]
+                extra = extra[7:]
                 parsed.update({'bearing': int(brg), 'nrq': int(nrq)})
 
         #TODO parse PHG
@@ -569,6 +569,8 @@ def parse(raw_sentence):
             if temp[6] != '':
                 parsed['telemetry'].update({'bits': "{0:b}" % temp[7]})
 
+        if len(extra) > 0 and extra[0] == "/":
+            extra = extra[1:]
 
         parsed.update({'comment': extra})
     else:
