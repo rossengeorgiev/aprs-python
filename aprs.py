@@ -244,6 +244,39 @@ class IS(object):
                 time.sleep(0.5)
 
 
+# Mic-e message type table
+
+MTYPE_TABLE_STD = {
+    "111": "M0: Off Duty",
+    "110": "M1: En Route",
+    "101": "M2: In Service",
+    "100": "M3: Returning",
+    "011": "M4: Committed",
+    "010": "M5: Special",
+    "001": "M6: Priority",
+    "000": "Emergency",
+    }
+MTYPE_TABLE_CUSTOM = {
+    "111": "C0: Custom-0",
+    "110": "C1: Custom-1",
+    "101": "C2: Custom-2",
+    "100": "C3: Custom-3",
+    "011": "C4: Custom-4",
+    "010": "C5: Custom-5",
+    "001": "C6: Custom-6",
+    "000": "Emergency",
+    }
+
+# routine for decoding base91 values of arbitrary length
+
+def base91(text):
+    decimal = 0
+    length = len(text);
+    for i in range(length):
+        decimal += (ord(text[i]) - 33) * (91.0 ** (length-1-i))
+
+    return decimal if text != '' else ''
+
 # parse a single packet
 # throws expcetions
 
@@ -253,6 +286,7 @@ def parse(raw_sentence):
     All attributes are in meteric units
     """
 
+    raw_sentence = raw_sentence.rstrip("\r\n")
     logger.debug("Parsing: %s" % raw_sentence)
 
     if len(raw_sentence) == 0:
@@ -344,7 +378,6 @@ def parse(raw_sentence):
     # `lllc/s$/>........         Mic-E old posit
 
     if packet_type in "`'":
-        raise UnknownFormat("packet seems to be Mic-Encoded, unable to parse", raw_sentence)
         logger.debug("Attempting to parse as mic-e packet")
         parsed.update({'format': 'mic-e'})
 
@@ -363,17 +396,18 @@ def parse(raw_sentence):
         # get symbol table and symbol
         parsed.update({ 'symbol': body[6], 'symbol_table': body[7] })
 
-        dstcall = "T20000"
         # parse latitude
+        # the routine translates each characters into a lat digit as described in
+        # 'Mic-E Destination Address Field Encoding' table
         tmpdstcall = ""
         for i in dstcall:
-            if i in "KLZ":
+            if i in "KLZ": # spaces
                 tmpdstcall += " "
-            elif ord(i) > 76:
+            elif ord(i) > 76: # P-Y
                 tmpdstcall += chr(ord(i) - 32)
-            elif ord(i) > 57:
+            elif ord(i) > 57: # A-J
                 tmpdstcall += chr(ord(i) - 16)
-            else:
+            else: # 0-9
                 tmpdstcall += i
 
         # determine position ambiguity
@@ -397,15 +431,110 @@ def parse(raw_sentence):
         latminutes = float( ("%s.%s" % (tmpdstcall[2:4], tmpdstcall[4:6])).replace(" ", "0") )
 
         if latminutes >= 60:
-            raise PraseError("Latitude minutes >= 60")
+            raise ParseError("Latitude minutes >= 60")
 
-        latitude = int(tmpdstcall[0:2]) + (latminutes / 60)
+        latitude = int(tmpdstcall[0:2]) + (latminutes / 60.0)
 
         # determine the sign N/S
         latitude = -latitude if ord(dstcall[3]) <= 0x4c else latitude
 
         parsed.update({ 'latitude': latitude })
 
+        # parse message bits
+
+        mbits = re.sub(r"[0-9L]","0", dstcall[0:3])
+        mbits = re.sub(r"[P-Z]","1", mbits)
+        mbits = re.sub(r"[A-K]","2", mbits)
+
+        parsed.update({ 'mbits': mbits })
+
+        # resolve message type
+
+        if mbits.find("2") > -1:
+            parsed.update({ 'mtype': MTYPE_TABLE_CUSTOM[mbits.replace("2","1")] })
+        else:
+            parsed.update({ 'mtype': MTYPE_TABLE_STD[mbits] })
+
+        # parse longitude
+
+        longitude = ord(body[0]) - 28 # decimal part of longitude
+        longitude += 100 if ord(dstcall[4]) >= 0x50 else 0 # apply lng offset
+        longitude += -80 if longitude >= 180 and longitude <= 189 else 0
+        longitude += -190 if longitude >= 190 and longitude <= 199 else 0
+
+        # long minutes
+        lngminutes = ord(body[1]) - 28.0
+        lngminutes += -60 if lngminutes >= 60 else 0
+
+        # + (long hundredths of minutes)
+        lngminutes += ((ord(body[2]) - 28.0) / 100.0)
+
+        # apply position ambiguity
+        # routines adjust longitude to center of the ambiguity box
+        if posambiguity is 4:
+            lngminutes = 30
+        elif posambiguity is 3:
+            lngminutes = (math.floor(lngminutes/10) + 0.5) * 10
+        elif posambiguity is 2:
+            lngminutes = math.floor(lngminutes) + 0.5
+        elif posambiguity is 1:
+            lngminutes = (math.floor(lngminutes*10) + 0.5) / 10.0
+        elif posambiguity is not 0:
+            raise ParseError("Unsupported position ambiguity: %d" % posambiguity);
+
+        longitude += lngminutes / 60.0
+
+        # apply E/W sign
+        longitude = 0 - longitude if ord(dstcall[5]) >= 0x50 else longitude
+
+        parsed.update({ 'longitude': longitude })
+
+        # parse speed and course
+        speed = (ord(body[3]) - 28) * 10
+        course = ord(body[4]) - 28
+        quotient = int(course / 10.0)
+        course += -(quotient * 10)
+        course = course*100 + ord(body[5]) - 28
+        speed += quotient
+
+        speed += -800 if speed >= 800 else 0
+        course += -400 if course >= 400 else 0
+
+        speed *= 1.852 # knots * 1.852 = kmph
+        parsed.update({'speed': speed, 'course': course })
+
+        # the rest of the packet can contain telemetry and comment
+
+        if len(body) > 8:
+            body = body[8:]
+
+            # check for optional 2 or 5 channel telemetry
+            match = re.findall(r"^('[0-9a-f]{10}|`[0-9-af]{4})(.*)$", body)
+            if match:
+                hexdata, body = match[0]
+
+                hexdata = hexdata[1:]           # remove telemtry flag
+                channels = len(hexdata) / 2     # determine number of channels
+                hexdata = int(hexdata, 16)      # convert hex to int
+
+                telemetry = []
+                for i in range(channels):
+                    telemetry.insert(0, int(hexdata >> 8*i & 255))
+
+                parsed.update({'telemetry': telemetry})
+
+            # check for optional altitude
+            match = re.findall(r"^(.*)([!-{]{3})\}(.*)$", body)
+            if match:
+                body,altitude,extra = match[0]
+
+                altitude = base91(altitude) - 10000
+                parsed.update({'altitude': altitude})
+
+                body = body + extra
+
+            # rest is a comment
+            parsed.update({'comment': body})
 
     # STATUS PACKET
     #
@@ -445,17 +574,13 @@ def parse(raw_sentence):
             symbol_table = packet[0]
             symbol = packet[9]
 
-            packet = [ord(x) - 33 for x in packet]
-
-            for idx in range(1,9):
-               packet[idx] *= math.pow(91, 4 - idx%4) if idx % 4 != 0 else 1
-
-            latitude = 90 - (sum(packet[1:4]) / 380926)
-            longitude = -180 + (sum(packet[5:9]) / 190463)
+            latitude = 90 - (base91(packet[1:5]) / 380926)
+            longitude = -180 + (base91(packet[5:9]) / 190463)
 
             # parse csT
 
-            c1,s1,ctype = packet[10:13]
+            # converts the relevant characters from base91
+            c1,s1,ctype = [ord(x) - 33 for x in packet[10:13]]
 
             if c1 == -1:
                 parsed.update({'gpsfixstatus': 1 if ctype & 0x20 == 0x20 else 0})
@@ -549,7 +674,7 @@ def parse(raw_sentence):
             parsed.update({ 'altitude': int(altitude)*0.3048 })
 
         # try parse comment telemetry
-        match = re.findall(r"^(.*?)\|(([!-{]{2}){2,5})\|(.*)$", extra)
+        match = re.findall(r"^(.*?)\|(([!-{]{2}){2,7})\|(.*)$", extra)
         if match:
             extra,telemetry,junk,post = match[0]
             extra += post
@@ -559,15 +684,14 @@ def parse(raw_sentence):
                 temp.append('')
 
                 try:
-                    temp[i] = (ord(telemetry[i*2]) - 33) * 91
-                    temp[i] += ord(telemetry[i*2 + 1]) - 33
+                    temp[i] = base91(telemetry[i*2:i*2+2])
                 except:
                     continue
 
             parsed.update({'telemetry': {'seq': temp[0], 'vals': temp[1:6]}})
 
             if temp[6] != '':
-                parsed['telemetry'].update({'bits': "{0:b}" % temp[7]})
+                parsed['telemetry'].update({'bits': "{0:08b}".format(int(temp[6]))})
 
         if len(extra) > 0 and extra[0] == "/":
             extra = extra[1:]
