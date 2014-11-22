@@ -572,16 +572,19 @@ def parse(raw_sentence):
         # check if it's a telemetry configuration message
         match  = re.findall(r"^([a-zA-Z0-9 ]{9}):(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
         if match:
-            logger.debug("Attempting to parse message packet with telemetry setup")
+            logger.debug("Attempting to parse telemetry message packet")
             addresse,form,body = match[0]
 
             parsed.update({'format': 'telemetry-message', 'addresse': addresse.rstrip(' ')})
 
             if form in ["PARM", "UNIT"]:
-                if not re.match(r"^([ -~]{1,7}){5,13}$", body):
-                    raise ParseError("incorrect format of %s" % form)
+                vals = body.split(',')
 
-                parsed.update({ 't%s' % form : body.split(',') })
+                for val in vals:
+                    if not re.match(r"^([ -~]{1,7}|)$", val):
+                        raise ParseError("incorrect format of %s" % form)
+
+                parsed.update({ 't%s' % form : vals })
             elif form == "EQNS":
                 eqns = body.split(',')
                 teqns = [[] for i in range(5)]
@@ -591,13 +594,13 @@ def parse(raw_sentence):
 
                 count = 0
                 for val in eqns:
-                    if not re.match("^[-]?\d*\.?\d+$", val):
-                        raise ParseError("value at %d is not a number in %s" % form)
+                    if not re.match("^([-]?\d*\.?\d+|)$", val):
+                        raise ParseError("value at %d is not a number in %s" % (count,form))
                     else:
                         try:
                             val = int(val)
                         except:
-                            val = float(val)
+                            val = float(val) if val != "" else ""
 
                         teqns[int(math.floor(count / 3))].append(val)
 
