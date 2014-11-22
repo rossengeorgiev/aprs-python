@@ -353,30 +353,29 @@ def parse(raw_sentence):
     # try and parse timestamp first for status and position reports
     if packet_type in '>/@':
         # try to parse timestamp
-        ts = re.findall(r"^[0-9]{6}[hz\/]$", body[0:7])
-        form = ''
-        if ts:
-            ts = ts[0]
-            form = ts[6]
-            ts = ts[0:6]
+        match = re.findall(r"^((\d{6})(.))$", body[0:7])
+        if match:
+            rawts,ts,form = match[0]
             utc = datetime.datetime.utcnow()
 
             if packet_type == '>' and form != 'z':
-                raise ParseError("Time format for status reports should be zulu")
+                raise ParseError("Time format for status reports should be zulu", raw_sentence)
 
-            parsed.update({ 'raw_timestamp': ts })
+            parsed.update({ 'raw_timestamp': rawts })
 
             try:
                 if form == 'h': # zulu hhmmss format
-                    timestamp = utc.strptime("%s %s %s %s" % (utc.year, utc.month, utc.day, ts), "%Y %m %d %H%M%S")
+                    timestamp = time.mktime(utc.strptime("%s %s %s %s" % (utc.year, utc.month, utc.day, ts), "%Y %m %d %H%M%S").timetuple())
                 elif form == 'z': # zulu ddhhss format
-                    timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
-                else: # '/' local ddhhss format
-                    timestamp = utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S")
+                    timestamp = time.mktime(utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S").timetuple())
+                elif form == '/': # '/' local ddhhss format
+                    timestamp = time.mktime(utc.strptime("%s %s %s" % (utc.year, utc.month, ts), "%Y %m %d%M%S").timetuple())
+                else:
+                    timestamp = 0
             except:
-                raise ParseError("Invalid time", raw_sentence)
+                timestamp = 0
 
-            parsed.update({ 'timestamp': timestamp.isoformat() + ('Z' if form not in 'hz' else '') })
+            parsed.update({ 'timestamp': int(timestamp) })
 
             # remove datetime from the body for further parsing
             body = body[7:]
@@ -395,13 +394,13 @@ def parse(raw_sentence):
 
         # verify mic-e format
         if len(dstcall) != 6:
-            raise ParseError("dstcall has to be 6 characters")
+            raise ParseError("dstcall has to be 6 characters", raw_sentence)
         if len(body) < 8:
-            raise ParseError("packet data field is too short")
+            raise ParseError("packet data field is too short", raw_sentence)
         if not re.match(r"^[0-9A-Z]{3}[0-9L-Z]{3}$", dstcall):
-            raise ParseError("invalid dstcall")
+            raise ParseError("invalid dstcall", raw_sentence)
         if not re.match(r"^[&-\x7f][&-a][\x1c-\x7f]{2}[\x1c-\x7d][\x1c-\x7f][\x21-\x7e][\/\\0-9A-Z]", body):
-            raise ParseError("invalid data format")
+            raise ParseError("invalid data format", raw_sentence)
 
         # get symbol table and symbol
         parsed.update({ 'symbol': body[6], 'symbol_table': body[7] })
@@ -423,7 +422,7 @@ def parse(raw_sentence):
         # determine position ambiguity
         match = re.findall(r"^\d+( *)$", tmpdstcall)
         if not match:
-            raise ParseError("invalid latitude ambiguity")
+            raise ParseError("invalid latitude ambiguity", raw_sentence)
 
         posambiguity = len(match[0])
         parsed.update({ 'posambiguity': posambiguity })
@@ -441,7 +440,7 @@ def parse(raw_sentence):
         latminutes = float( ("%s.%s" % (tmpdstcall[2:4], tmpdstcall[4:6])).replace(" ", "0") )
 
         if latminutes >= 60:
-            raise ParseError("Latitude minutes >= 60")
+            raise ParseError("Latitude minutes >= 60", raw_sentence)
 
         latitude = int(tmpdstcall[0:2]) + (latminutes / 60.0)
 
@@ -490,7 +489,7 @@ def parse(raw_sentence):
         elif posambiguity is 1:
             lngminutes = (math.floor(lngminutes*10) + 0.5) / 10.0
         elif posambiguity is not 0:
-            raise ParseError("Unsupported position ambiguity: %d" % posambiguity);
+            raise ParseError("Unsupported position ambiguity: %d" % posambiguity, raw_sentence)
 
         longitude += lngminutes / 60.0
 
@@ -581,8 +580,8 @@ def parse(raw_sentence):
                 vals = body.split(',')
 
                 for val in vals:
-                    if not re.match(r"^([ -~]{1,7}|)$", val):
-                        raise ParseError("incorrect format of %s" % form)
+                    if not re.match(r"^(.{1,20}|)$", val):
+                        raise ParseError("incorrect format of %s" % form, raw_sentence)
 
                 parsed.update({ 't%s' % form : vals })
             elif form == "EQNS":
@@ -590,12 +589,12 @@ def parse(raw_sentence):
                 teqns = [[] for i in range(5)]
 
                 if len(eqns) is not 15:
-                    raise ParseError("there needs to be 15 values in %s" % form)
+                    raise ParseError("there needs to be 15 values in %s" % form, raw_sentence)
 
                 count = 0
                 for val in eqns:
                     if not re.match("^([-]?\d*\.?\d+|)$", val):
-                        raise ParseError("value at %d is not a number in %s" % (count,form))
+                        raise ParseError("value at %d is not a number in %s" % (count,form), raw_sentence)
                     else:
                         try:
                             val = int(val)
@@ -610,7 +609,7 @@ def parse(raw_sentence):
             elif form == "BITS":
                 match = re.findall(r"^([01]{8}),(.{0,23})$", body)
                 if not match:
-                    raise ParseError("incorrect format of %s (maybe title too long?)" % form)
+                    raise ParseError("incorrect format of %s (maybe title too long?)" % form, raw_sentence)
 
                 bits, title = match[0]
 
@@ -691,16 +690,22 @@ def parse(raw_sentence):
                 extra
                 ) = re.match(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{2})([NnSs])([\/\\0-9A-Z])(\d{3})([0-9 ]{2}\.[0-9 ]{2})([EeWw])([\x21-\x7e])(.*)$", body).groups()
 
+                # TODO: position ambiguity
+
                 # validate longitude and latitude
 
                 if int(lat_deg) > 89 or int(lat_deg) < 0:
                     raise ParseError("latitude is out of range (0-90 degrees)", raw_sentence)
                 if int(lon_deg) > 179 or int(lon_deg) < 0:
                     raise ParseError("longitutde is out of range (0-180 degrees)", raw_sentence)
-                if float(lat_min) >= 60:
-                    raise ParseError("latitude minutes are out of range (0-60)", raw_sentence)
-                if float(lon_min) >= 60:
-                    raise ParseError("longitude minutes are out of range (0-60)", raw_sentence)
+                #if float(lat_min) >= 60:
+                #    raise ParseError("latitude minutes are out of range (0-60)", raw_sentence)
+                #if float(lon_min) >= 60:
+                #    raise ParseError("longitude minutes are out of range (0-60)", raw_sentence)
+                # the above is commented out intentionally
+                # apperantly aprs.fi doesn't bound check minutes
+                # and there are actual packets that have >60min
+                # i don't even know why that's the case
 
                 # convert coordinates from DDMM.MM to decimal
 
@@ -710,7 +715,7 @@ def parse(raw_sentence):
                 latitude *= -1 if lat_dir in 'Ss' else 1
                 longitude *= -1 if lon_dir in 'Ww' else 1
 
-            except Exception, e:
+            except:
                 # failed to match normal sentence sentence
                 raise ParseError("invalid format", raw_sentence)
 
