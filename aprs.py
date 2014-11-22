@@ -549,7 +549,71 @@ def parse(raw_sentence):
     # >Comments
 
     elif packet_type == '>':
+        logger.debug("Packet is just a status message")
         parsed.update({'format': 'status', 'comment': body })
+
+    # MESSAGE PACKET
+    #
+    # :ADDRESSEE:Message text ........{XXXXX    Up to 5 char line number
+    # :ADDRESSEE:ackXXXXX                       Ack for same line number
+    # :ADDRESSEE:Message text ........{MM}AA    Line# with REPLY ACK
+    #
+    # TELEMETRY MESSAGES
+    #
+    # :N3MIM:PARM.Battery,BTemp,AirTemp,Pres,Altude,Camra,Chute,Sun,10m,ATV
+    # :N3MIM:UNIT.Volts,deg.F,deg.F,Mbar,Kfeet,Clik,OPEN!,on,on,high
+    # :N3MIM:EQNS.0,2.6,0,0,.53,-32,3,4.39,49,-32,3,18,1,2,3
+    # :N3MIM:BITS.10110101,PROJECT TITLE...
+
+    elif packet_type == ':':
+        # check if it's a telemetry configuration message
+        match  = re.findall(r"^([a-zA-Z0-9 ]{9}):(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
+        if match:
+            logger.debug("Attempting to parse message packet with telemetry setup")
+            addresse,form,body = match[0]
+
+            parsed.update({'format': 'telemetry-message', 'addresse': addresse.rstrip(' ')})
+
+            if form in ["PARM", "UNIT"]:
+                if not re.match(r"^([ -~]{1,7}){5,13}$", body):
+                    raise ParseError("incorrect format of %s" % form)
+
+                parsed.update({ 't%s' % form : body.split(',') })
+            elif form == "EQNS":
+                eqns = body.split(',')
+                teqns = [[] for i in range(5)]
+
+                if len(eqns) is not 15:
+                    raise ParseError("there needs to be 15 values in %s" % form)
+
+                count = 0
+                for val in eqns:
+                    if not re.match("^[-]?\d*\.?\d+$", val):
+                        raise ParseError("value at %d is not a number in %s" % form)
+                    else:
+                        try:
+                            val = int(val)
+                        except:
+                            val = float(val)
+
+                        teqns[int(math.floor(count / 3))].append(val)
+
+                        count += 1
+
+                parsed.update({ 't%s' % form : teqns })
+            elif form == "BITS":
+                match = re.findall(r"^([01]{8}),(.{0,23})$", body)
+                if not match:
+                    raise ParseError("incorrect format of %s (maybe title too long?)" % form)
+
+                bits, title = match[0]
+
+                parsed.update({ 't%s' % form : bits, 'title': title })
+
+        # regular message
+        else:
+            logger.debug("Packet is just a regular message")
+            parsed.update({'format': 'message', 'message_text': body })
 
     # postion report (regular or compressed)
     #
