@@ -756,9 +756,9 @@ def parse(raw_sentence):
             parsed.update({ 'altitude': int(altitude)*0.3048 })
 
         # try parse comment telemetry
-        match = re.findall(r"^(.*?)\|(([!-{]{2}){2,7})\|(.*)$", extra)
-        if match:
-            extra,telemetry,junk,post = match[0]
+        match = re.findall(r"^(.*?)\|([!-{]{2,14})\|(.*)$", extra)
+        if match and len(match[0][2]) % 2 == 0:
+            extra,telemetry,post = match[0]
             extra += post
 
             temp = []
@@ -767,6 +767,7 @@ def parse(raw_sentence):
 
                 try:
                     temp[i] = base91(telemetry[i*2:i*2+2])
+                    temp[i] = int(temp[i]) if temp[i].is_integer() else temp[i]
                 except:
                     continue
 
