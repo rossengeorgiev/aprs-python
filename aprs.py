@@ -6,6 +6,7 @@ import datetime
 import re
 import math
 import logging
+import sys
 
 
 logger = logging.getLogger(__name__)
@@ -165,9 +166,11 @@ class IS(object):
             self.sock.setblocking(True)
 
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 15)
-            self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
-            self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
+
+            if sys.platform not in ['cygwin','win32']:
+                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 15)
+                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
+                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
 
             if self.sock.recv(512)[0] != "#":
                 raise ConnectionError("invalid banner from server")
