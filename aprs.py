@@ -569,7 +569,7 @@ def parse(raw_sentence):
 
     elif packet_type == ':':
         # check if it's a telemetry configuration message
-        match  = re.findall(r"^([a-zA-Z0-9 ]{9}):(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
+        match  = re.findall(r"^([a-zA-Z0-9 \-]{9}):(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
         if match:
             logger.debug("Attempting to parse telemetry message packet")
             addresse,form,body = match[0]
@@ -577,39 +577,39 @@ def parse(raw_sentence):
             parsed.update({'format': 'telemetry-message', 'addresse': addresse.rstrip(' ')})
 
             if form in ["PARM", "UNIT"]:
-                vals = body.split(',')
+                vals = body.split(',')[:13]
 
                 for val in vals:
                     if not re.match(r"^(.{1,20}|)$", val):
-                        raise ParseError("incorrect format of %s" % form, raw_sentence)
+                        raise ParseError("incorrect format of %s (name too long?)" % form, raw_sentence)
 
-                parsed.update({ 't%s' % form : vals })
+                defvals = [''] * 13
+                defvals[:len(vals)] = vals
+
+                parsed.update({ 't%s' % form : defvals })
             elif form == "EQNS":
-                eqns = body.split(',')
-                teqns = [[] for i in range(5)]
+                eqns = body.split(',')[:15]
+                teqns = [0,1,0] * 5
 
-                if len(eqns) is not 15:
-                    raise ParseError("there needs to be 15 values in %s" % form, raw_sentence)
-
-                count = 0
-                for val in eqns:
+                for idx,val in zip(range(len(eqns)), eqns):
                     if not re.match("^([-]?\d*\.?\d+|)$", val):
-                        raise ParseError("value at %d is not a number in %s" % (count,form), raw_sentence)
+                        raise ParseError("value at %d is not a number in %s" % (idx+1,form), raw_sentence)
                     else:
                         try:
                             val = int(val)
                         except:
-                            val = float(val) if val != "" else ""
+                            val = float(val) if val != "" else 0
 
-                        teqns[int(math.floor(count / 3))].append(val)
+                        teqns[idx] = val
 
-                        count += 1
+                # group values in 5 list of 3
+                teqns = [teqns[i*3:(i+1)*3] for i in range(5)]
 
                 parsed.update({ 't%s' % form : teqns })
             elif form == "BITS":
                 match = re.findall(r"^([01]{8}),(.{0,23})$", body)
                 if not match:
-                    raise ParseError("incorrect format of %s (maybe title too long?)" % form, raw_sentence)
+                    raise ParseError("incorrect format of %s (title too long?)" % form, raw_sentence)
 
                 bits, title = match[0]
 
