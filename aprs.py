@@ -568,57 +568,108 @@ def parse(raw_sentence):
     # :N3MIM:BITS.10110101,PROJECT TITLE...
 
     elif packet_type == ':':
-        # check if it's a telemetry configuration message
-        match  = re.findall(r"^([a-zA-Z0-9 \-]{9}):(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
-        if match:
-            logger.debug("Attempting to parse telemetry message packet")
-            addresse,form,body = match[0]
+        # the while loop is used to easily break out once a match is found
+        while True:
+            # try to match bulletin
+            match  = re.findall(r"^BLN([0-9])([a-zA-Z0-9 \-]{5}):(.{0,67})", body)
+            if match:
+                bid, identifier, text = match[0]
+                identifier = identifier.rstrip(' ')
 
-            parsed.update({'format': 'telemetry-message', 'addresse': addresse.rstrip(' ')})
+                mformat = 'bulletin' if identifier == "" else 'group-bulletin'
 
-            if form in ["PARM", "UNIT"]:
-                vals = body.split(',')[:13]
+                parsed.update({'format':mformat, 'message_text':text, 'bid':bid, 'identifier': identifier})
+                break
 
-                for val in vals:
-                    if not re.match(r"^(.{1,20}|)$", val):
-                        raise ParseError("incorrect format of %s (name too long?)" % form, raw_sentence)
+            # try to match announcement
+            match  = re.findall(r"^BLN([A-Z])([a-zA-Z0-9 \-]{5}):(.{0,67})", body)
+            if match:
+                aid, identifier, text = match[0]
+                identifier = identifier.rstrip(' ')
 
-                defvals = [''] * 13
-                defvals[:len(vals)] = vals
+                parsed.update({'format':'announcement', 'message_text':text, 'aid':aid, 'identifier': identifier})
+                break
 
-                parsed.update({ 't%s' % form : defvals })
-            elif form == "EQNS":
-                eqns = body.split(',')[:15]
-                teqns = [0,1,0] * 5
+            # validate addresse
+            match  = re.findall(r"^([a-zA-Z0-9 \-]{9}):(.*)$", body)
+            if not match:
+                raise ParseError("invalid addresse in message", raw_sentance)
 
-                for idx,val in zip(range(len(eqns)), eqns):
-                    if not re.match("^([-]?\d*\.?\d+|)$", val):
-                        raise ParseError("value at %d is not a number in %s" % (idx+1,form), raw_sentence)
-                    else:
-                        try:
-                            val = int(val)
-                        except:
-                            val = float(val) if val != "" else 0
+            addresse,body = match[0]
 
-                        teqns[idx] = val
+            parsed.update({'addresse': addresse.rstrip(' ')})
 
-                # group values in 5 list of 3
-                teqns = [teqns[i*3:(i+1)*3] for i in range(5)]
+            # check if it's a telemetry configuration message
+            match  = re.findall(r"^(PARM|UNIT|EQNS|BITS)\.(.*)$", body)
+            if match:
+                logger.debug("Attempting to parse telemetry-message packet")
+                form,body = match[0]
 
-                parsed.update({ 't%s' % form : teqns })
-            elif form == "BITS":
-                match = re.findall(r"^([01]{8}),(.{0,23})$", body)
-                if not match:
-                    raise ParseError("incorrect format of %s (title too long?)" % form, raw_sentence)
+                parsed.update({'format': 'telemetry-message'})
 
-                bits, title = match[0]
+                if form in ["PARM", "UNIT"]:
+                    vals = body.split(',')[:13]
 
-                parsed.update({ 't%s' % form : bits, 'title': title })
+                    for val in vals:
+                        if not re.match(r"^(.{1,20}|)$", val):
+                            raise ParseError("incorrect format of %s (name too long?)" % form, raw_sentence)
 
-        # regular message
-        else:
-            logger.debug("Packet is just a regular message")
-            parsed.update({'format': 'message', 'message_text': body })
+                    defvals = [''] * 13
+                    defvals[:len(vals)] = vals
+
+                    parsed.update({ 't%s' % form : defvals })
+                elif form == "EQNS":
+                    eqns = body.split(',')[:15]
+                    teqns = [0,1,0] * 5
+
+                    for idx,val in zip(range(len(eqns)), eqns):
+                        if not re.match("^([-]?\d*\.?\d+|)$", val):
+                            raise ParseError("value at %d is not a number in %s" % (idx+1,form), raw_sentence)
+                        else:
+                            try:
+                                val = int(val)
+                            except:
+                                val = float(val) if val != "" else 0
+
+                            teqns[idx] = val
+
+                    # group values in 5 list of 3
+                    teqns = [teqns[i*3:(i+1)*3] for i in range(5)]
+
+                    parsed.update({ 't%s' % form : teqns })
+                elif form == "BITS":
+                    match = re.findall(r"^([01]{8}),(.{0,23})$", body)
+                    if not match:
+                        raise ParseError("incorrect format of %s (title too long?)" % form, raw_sentence)
+
+                    bits, title = match[0]
+
+                    parsed.update({ 't%s' % form : bits, 'title': title })
+
+            # regular message
+            else:
+                logger.debug("Packet is just a regular message")
+                parsed.update({'format': 'message'})
+
+                print body
+                match  = re.findall(r"^(ack|rej)\{([0-9]{1,5})$", body)
+                if match:
+                    response, number = match[0]
+
+                    parsed.update({'response': response, 'msgNo': number })
+                else:
+                    body = body[0:70]
+
+                    match  = re.findall(r"\{([0-9]{1,5})$", body)
+                    if match:
+                        msgid = match[0]
+                        body = body[:len(body) - 1 - len(msgid)]
+
+                        parsed.update( {'msgNo': int(msgid)} )
+
+                    parsed.update({'message_text': body })
+
+            break
 
     # postion report (regular or compressed)
     #
