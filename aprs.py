@@ -593,7 +593,7 @@ def parse(raw_sentence):
             # validate addresse
             match  = re.findall(r"^([a-zA-Z0-9 \-]{9}):(.*)$", body)
             if not match:
-                raise ParseError("invalid addresse in message", raw_sentance)
+                raise ParseError("invalid addresse in message", raw_sentence)
 
             addresse,body = match[0]
 
@@ -651,7 +651,6 @@ def parse(raw_sentence):
                 logger.debug("Packet is just a regular message")
                 parsed.update({'format': 'message'})
 
-                print body
                 match  = re.findall(r"^(ack|rej)\{([0-9]{1,5})$", body)
                 if match:
                     response, number = match[0]
