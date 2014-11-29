@@ -343,7 +343,7 @@ def parse(raw_sentence):
             #TODO !DAO! parsing
 
             # rest is a comment
-            parsed.update({'comment': body})
+            parsed.update({'comment': body.strip(' ')})
 
     # STATUS PACKET
     #
@@ -354,7 +354,7 @@ def parse(raw_sentence):
         logger.debug("Packet is just a status message")
         parsed.update({
             'format': 'status',
-            'status': body
+            'status': body.strip(' ')
             })
 
     # MESSAGE PACKET
@@ -383,7 +383,7 @@ def parse(raw_sentence):
 
                 parsed.update({
                     'format': mformat,
-                    'message_text': text,
+                    'message_text': text.strip(' '),
                     'bid': bid,
                     'identifier': identifier
                     })
@@ -397,7 +397,7 @@ def parse(raw_sentence):
 
                 parsed.update({
                     'format': 'announcement',
-                    'message_text': text,
+                    'message_text': text.strip(' '),
                     'aid': aid,
                     'identifier': identifier
                     })
@@ -463,7 +463,7 @@ def parse(raw_sentence):
 
                     parsed.update({
                         't%s' % form: bits,
-                        'title': title
+                        'title': title.strip(' ')
                         })
 
             # regular message
@@ -489,7 +489,7 @@ def parse(raw_sentence):
 
                         parsed.update({'msgNo': int(msgid)})
 
-                    parsed.update({'message_text': body})
+                    parsed.update({'message_text': body.strip(' ')})
 
             break
 
@@ -643,7 +643,7 @@ def parse(raw_sentence):
         if len(extra) > 0 and extra[0] == "/":
             extra = extra[1:]
 
-        parsed.update({'comment': extra})
+        parsed.update({'comment': extra.strip(' ')})
     else:
         raise UnknownFormat("format is not supported", raw_sentence)
 
