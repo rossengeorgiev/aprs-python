@@ -604,6 +604,12 @@ def parse(raw_sentence):
 
                 body = body + extra
 
+            # attempt to parsed comment telemetry
+            body, telemetry = _parse_comment_telemetry(body)
+            parsed.update(telemetry)
+
+            #TODO !DAO! parsing
+
             # rest is a comment
             parsed.update({'comment': body})
 
@@ -876,7 +882,10 @@ def parse(raw_sentence):
         if match:
             cse, spd = match[0]
             extra = extra[7:]
-            parsed.update({'course': int(cse), 'speed': int(spd)*1.852})  # knots to kms
+            parsed.update({
+                'course': int(cse),
+                'speed': int(spd)*1.852  # knots to kms
+                })
 
             # try BRG/NRQ/
             match = re.findall(r"^([0-9]{3})/([0-9]{3})", extra)
@@ -896,26 +905,8 @@ def parse(raw_sentence):
 
             parsed.update({'altitude': int(altitude)*0.3048})
 
-        # try parse comment telemetry
-        match = re.findall(r"^(.*?)\|([!-{]{2,14})\|(.*)$", extra)
-        if match and len(match[0][2]) % 2 == 0:
-            extra, telemetry, post = match[0]
-            extra += post
-
-            temp = []
-            for i in range(7):
-                temp.append('')
-
-                try:
-                    temp[i] = base91(telemetry[i*2:i*2+2])
-                    temp[i] = int(temp[i]) if temp[i].is_integer() else temp[i]
-                except:
-                    continue
-
-            parsed.update({'telemetry': {'seq': temp[0], 'vals': temp[1:6]}})
-
-            if temp[6] != '':
-                parsed['telemetry'].update({'bits': "{0:08b}".format(int(temp[6]))})
+        extra, telemetry = _parse_comment_telemetry(extra)
+        parsed.update(telemetry)
 
         if len(extra) > 0 and extra[0] == "/":
             extra = extra[1:]
@@ -926,6 +917,41 @@ def parse(raw_sentence):
 
     logger.debug("Parsed ok.")
     return parsed
+
+
+def _parse_comment_telemetry(text):
+    """
+    Looks for base91 telemetry found in comment field
+    Returns [remaining_text, telemetry]
+    """
+    match = re.findall(r"^(.*?)\|([!-{]{2,14})\|(.*)$", text)
+    if match and len(match[0][1]) % 2 == 0:
+        text, telemetry, post = match[0]
+        text += post
+
+        temp = [''] * 7
+        for i in range(7):
+            try:
+                temp[i] = base91(telemetry[i*2:i*2+2])
+                temp[i] = int(temp[i]) if temp[i].is_integer() else temp[i]
+            except:
+                continue
+
+        parsed = {
+            'telemetry': {
+                'seq': temp[0],
+                'vals': temp[1:6]
+                }
+            }
+
+        if temp[6] != '':
+            parsed['telemetry'].update({
+                'bits': "{0:08b}".format(int(temp[6]))
+                })
+
+        return [text, parsed]
+    else:
+        return [text, {}]
 
 
 # Exceptions
