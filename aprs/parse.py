@@ -656,7 +656,7 @@ def _parse_comment_telemetry(text):
     Looks for base91 telemetry found in comment field
     Returns [remaining_text, telemetry]
     """
-    match = re.findall(r"^(.*?)\|([!-{]{2,14})\|(.*)$", text)
+    match = re.findall(r"^(.*?)\|([!-{]{6,14})\|(.*)$", text)
     if match and len(match[0][1]) % 2 == 0:
         text, telemetry, post = match[0]
         text += post
