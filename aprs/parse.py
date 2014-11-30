@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 
 from .exceptions import (UnknownFormat, ParseError)
+import base91
 
 __all__ = ['parse']
 
@@ -35,19 +36,6 @@ MTYPE_TABLE_CUSTOM = {
     "001": "C6: Custom-6",
     "000": "Emergency",
     }
-
-
-def base91(text):
-    """
-    Takes a base91 char string and returns decimal
-    """
-
-    decimal = 0
-    length = len(text)
-    for i in range(length):
-        decimal += (ord(text[i]) - 33) * (91.0 ** (length-1-i))
-
-    return decimal if text != '' else ''
 
 
 def parse(raw_sentence):
@@ -334,7 +322,7 @@ def parse(raw_sentence):
             if match:
                 body, altitude, extra = match[0]
 
-                altitude = base91(altitude) - 10000
+                altitude = base91.to_decimal(altitude) - 10000
                 parsed.update({'altitude': altitude})
 
                 body = body + extra
@@ -526,8 +514,8 @@ def parse(raw_sentence):
             symbol_table = packet[0]
             symbol = packet[9]
 
-            latitude = 90 - (base91(packet[1:5]) / 380926)
-            longitude = -180 + (base91(packet[5:9]) / 190463)
+            latitude = 90 - (base91.to_decimal(packet[1:5]) / 380926.0)
+            longitude = -180 + (base91.to_decimal(packet[5:9]) / 190463.0)
 
             # parse csT
 
@@ -659,18 +647,14 @@ def _parse_comment_telemetry(text):
     Looks for base91 telemetry found in comment field
     Returns [remaining_text, telemetry]
     """
-    match = re.findall(r"^(.*?)\|([!-{]{6,14})\|(.*)$", text)
+    match = re.findall(r"^(.*?)\|([!-{]{4,14})\|(.*)$", text)
     if match and len(match[0][1]) % 2 == 0:
         text, telemetry, post = match[0]
         text += post
 
-        temp = [''] * 7
+        temp = [0] * 7
         for i in range(7):
-            try:
-                temp[i] = base91(telemetry[i*2:i*2+2])
-                temp[i] = int(temp[i]) if temp[i].is_integer() else temp[i]
-            except:
-                continue
+            temp[i] = base91.to_decimal(telemetry[i*2:i*2+2])
 
         parsed = {
             'telemetry': {
