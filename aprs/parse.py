@@ -1,10 +1,13 @@
+"""
+This module contains all function used in parsing packets
+"""
 import time
 import re
 import math
 import logging
 from datetime import datetime
 
-from .exceptions import *
+from .exceptions import (UnknownFormat, ParseError)
 
 __all__ = ['parse']
 
@@ -438,7 +441,7 @@ def parse(raw_sentence):
                     teqns = [0, 1, 0] * 5
 
                     for idx, val in enumerate(eqns):
-                        if not re.match("^([-]?\d*\.?\d+|)$", val):
+                        if not re.match(r"^([-]?\d*\.?\d+|)$", val):
                             raise ParseError("value at %d is not a number in %s" % (idx+1, form), raw_sentence)
                         else:
                             try:
