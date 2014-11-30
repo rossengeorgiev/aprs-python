@@ -668,6 +668,6 @@ def _parse_comment_telemetry(text):
                 'bits': "{0:08b}".format(int(temp[6]))
                 })
 
-        return [text, parsed]
+        return (text, parsed)
     else:
-        return [text, {}]
+        return (text, {})
