@@ -57,44 +57,27 @@ def parse(raw_sentence):
     if len(raw_sentence) == 0:
         raise ParseError("packet is empty", raw_sentence)
 
+    # typical packet format
+    #
+    #  CALL1>CALL2,CALL3,CALL4:>longtext......
+    # |--------header--------|-----body-------|
+    #
     try:
-        (header, body) = raw_sentence.split(':', 1)
+        (head, body) = raw_sentence.split(':', 1)
     except:
         raise ParseError("packet has no body", raw_sentence)
 
     if len(body) == 0:
         raise ParseError("packet body is empty", raw_sentence)
 
-    if not re.match(r"^[ -~]+$", header):
-        raise ParseError("packet header contains non-ascii characters ", raw_sentence)
-
-    try:
-        (fromcall, path) = header.split('>', 1)
-    except:
-        raise ParseError("invalid packet header", raw_sentence)
-
-    # TODO: validate callsigns??
-
-    path = path.split(',')
-
-    if len(path) < 1 or len(path[0]) == 0:
-        raise ParseError("no tocallsign", raw_sentence)
-
-    tocall = path[0]
-    path = path[1:]
-
     parsed = {
         'raw': raw_sentence,
-        'from': fromcall,
-        'to': tocall,
-        'path': path,
         }
 
     try:
-        viacall = path[-1] if re.match(r"^qA[CXUoOSrRRZI]$", path[-2]) else ""
-        parsed.update({'via': viacall})
-    except:
-        pass
+        parsed.update(_parse_header(head))
+    except ParseError, msg:
+        raise ParseError(str(msg), raw_sentence)
 
     packet_type = body[0]
     body = body[1:]
@@ -157,7 +140,7 @@ def parse(raw_sentence):
         logger.debug("Attempting to parse as mic-e packet")
         parsed.update({'format': 'mic-e'})
 
-        dstcall = tocall.split('-')[0]
+        dstcall = parsed['to'].split('-')[0]
 
         # verify mic-e format
         if len(dstcall) != 6:
@@ -639,6 +622,73 @@ def parse(raw_sentence):
         raise UnknownFormat("format is not supported", raw_sentence)
 
     logger.debug("Parsed ok.")
+    return parsed
+
+
+def _validate_callsign(callsign, prefix=""):
+    prefix = '%s: ' % prefix if bool(prefix) else ''
+
+    match = re.findall(r"^([A-Z0-9]{1,6})(-(\d{1,2}))?$", callsign)
+
+    if not match:
+        raise ParseError("%sinvalid callsign" % prefix)
+
+    callsign, x, ssid = match[0]
+
+    if bool(ssid) and int(ssid) > 15:
+        raise ParseError("%sssid not in 0-15 range" % prefix)
+
+
+def _parse_header(head):
+    """
+    Parses the header part of packet
+    Returns a dict
+    """
+    #  CALL1>CALL2,CALL3,CALL4,CALL5:
+    # |from-|--to-|------path-------|
+    #
+    try:
+        (fromcall, path) = head.split('>', 1)
+    except:
+        raise ParseError("invalid packet header")
+
+    if len(fromcall) == 0:
+        raise ParseError("no fromcallsign in header")
+
+    _validate_callsign(fromcall, "fromcallsign")
+
+    path = path.split(',')
+
+    if len(path) < 1 or len(path[0]) == 0:
+        raise ParseError("no tocallsign in header")
+
+    tocall = path[0]
+    path = path[1:]
+
+    _validate_callsign(tocall, "tocallsign")
+
+    for digi in path:
+        if not re.findall(r"^[A-Z0-9\-]{1,9}\*?$", digi, re.I):
+            raise ParseError("invalid callsign in path")
+
+    parsed = {
+        'from': fromcall,
+        'to': tocall,
+        'path': path,
+        }
+
+    # viacall is the callsign that gated the packet to the net
+    # it's located behind the q-contructed
+    #
+    #  CALL1>CALL2,CALL3,qAR,CALL5:
+    #  .....................|-via-|
+    #
+    viacall = ""
+    if len(path) > 2 and re.match(r"^q..$", path[-2]):
+        viacall = path[-1]
+
+    parsed.update({'via': viacall})
+
     return parsed
 
 
