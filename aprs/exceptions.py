@@ -12,9 +12,9 @@ __all__ = [
     "ConnectionDrop",
     ]
 
-logger = logging.getLogger(__name__)
 logging.raiseExceptions = False
 logging.addLevelName(11, "ParseError")
+logging.addLevelName(9, "UnknownFormat")
 
 
 class GenericError(Exception):
@@ -22,11 +22,9 @@ class GenericError(Exception):
     Base exception class for the library. Logs information via logging module
     """
     def __init__(self, message):
-        logger.debug("%s: %s", self.__class__.__name__, message)
-        self.message = message
+        super(GenericError, self).__init__(message)
 
-    def __str__(self):
-        return self.message
+        self.logger = logging.getLogger(__name__)
 
 
 class UnknownFormat(GenericError):
@@ -35,9 +33,10 @@ class UnknownFormat(GenericError):
 
     """
     def __init__(self, message, packet=''):
-        logger.log(9, "%s\nPacket: %s", message, packet)
-        self.message = message
+        super(UnknownFormat, self).__init__(message)
+
         self.packet = packet
+        self.logger.log(9, "%s\n    Packet: %s", message, packet)
 
 
 class ParseError(GenericError):
@@ -45,9 +44,10 @@ class ParseError(GenericError):
     Raised when unexpected format of a supported packet format is encountered
     """
     def __init__(self, message, packet=''):
-        logger.log(11, "%s\nPacket: %s", message, packet)
-        self.message = message
+        super(ParseError, self).__init__(message)
+
         self.packet = packet
+        self.logger.log(11, "%s\n    Packet: %s", message, packet)
 
 
 class LoginError(GenericError):
@@ -55,8 +55,9 @@ class LoginError(GenericError):
     Raised when IS servers didn't respond correctly to our loging attempt
     """
     def __init__(self, message):
-        logger.error("%s: %s", self.__class__.__name__, message)
-        self.message = message
+        super(LoginError, self).__init__(message)
+
+        self.logger.error("%s: %s", self.__class__.__name__, message)
 
 
 class ConnectionError(GenericError):
