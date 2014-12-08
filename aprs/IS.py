@@ -183,9 +183,12 @@ class IS(object):
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
             if sys.platform not in ['cygwin', 'win32']:
+                # these things don't exist in socket under Windows
+                # pylint: disable=E1103
                 self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 15)
                 self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
                 self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
+                # pylint: enable=E1103
 
             if self.sock.recv(512)[0] != "#":
                 raise ConnectionError("invalid banner from server")
