@@ -4,6 +4,7 @@ Provides facilities for covertion from/to base91
 from math import log
 from re import findall
 
+
 def to_decimal(text):
     """
     Takes a base91 char string and returns decimal
@@ -23,22 +24,22 @@ def to_decimal(text):
     return decimal if text != '' else 0
 
 
-def from_decimal(n, padding=1):
+def from_decimal(number, padding=1):
     """
     Takes a decimal and returns base91 char string.
     With optional padding to a specific length.
     """
     text = []
 
-    if not isinstance(n, (int, long)) is not int or n < 0:
+    if not isinstance(number, (int, long)) is not int or number < 0:
         raise ValueError("non-positive integer error")
-    elif not isinstance(n, (int, long)) or padding < 1:
+    elif not isinstance(number, (int, long)) or padding < 1:
         raise ValueError("padding must be integer and >0")
-    elif n > 0:
-        for d in [91**e for e in reversed(range(int(log(n) / log(91)) + 1))]:
-            q = n / d
-            n = n % d
-            text.append(chr(33 + q))
+    elif number > 0:
+        for divisor in [91**e for e in reversed(range(int(log(number) / log(91)) + 1))]:
+            quotient = number / divisor
+            number = number % divisor
+            text.append(chr(33 + quotient))
 
     # add padding if necessary
     text = ['!'] * (padding-len(text)) + text
