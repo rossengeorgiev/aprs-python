@@ -13,7 +13,7 @@ from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-import version
+from . import version
 __version__ = version.__version__
 del version
 

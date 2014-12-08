@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 
 from .exceptions import (UnknownFormat, ParseError)
-import base91
+from . import base91
 
 __all__ = ['parse']
 
