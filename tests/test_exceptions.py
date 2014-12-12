@@ -1,11 +1,10 @@
-
 import unittest
 
 from aprs.exceptions import *
 
 
-class TestExceptions(unittest.TestCase):
-    def test_exception_correctness(self):
+class ExceptionCorrectness(unittest.TestCase):
+    def test_all(self):
 
         # GenericErrror
         excpInst = GenericError("test")
