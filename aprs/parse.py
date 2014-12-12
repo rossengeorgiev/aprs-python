@@ -684,7 +684,7 @@ def _parse_header(head):
     #  .....................|-via-|
     #
     viacall = ""
-    if len(path) > 2 and re.match(r"^q..$", path[-2]):
+    if len(path) >= 2 and re.match(r"^q..$", path[-2]):
         viacall = path[-1]
 
     parsed.update({'via': viacall})

@@ -51,8 +51,8 @@ class ParseHeader(unittest.TestCase):
     def test_valid_input_and_format(self):
         # empty path header
         expected = {
-            "to": "B",
             "from": "A",
+            "to": "B",
             "via": "",
             "path": []
             }
@@ -62,8 +62,8 @@ class ParseHeader(unittest.TestCase):
 
         # with path
         expected2 = {
-            "to": "B",
             "from": "A",
+            "to": "B",
             "via": "",
             "path": list('CDE')
             }
@@ -72,17 +72,26 @@ class ParseHeader(unittest.TestCase):
         self.assertEqual(expected2, result2)
 
         # test all currently valid q-cosntructs
+        expected3 = {
+            "from": "A",
+            "to": "B",
+            "via": "E",
+            "path": ['C', 'D', 'qAR', 'E']
+            }
+        result3 = _parse_header("A>B,C,D,qAR,E")
+
+        self.assertEqual(expected3, result3)
 
         for qCon in map(lambda x: "qA"+x, list("CXUoOSrRRZI")):
-            expected3 = {
-                "to": "B",
+            expected4 = {
                 "from": "A",
-                "via": "D",
-                "path": ['C', qCon, 'D']
+                "to": "B",
+                "via": "C",
+                "path": [qCon, 'C']
                 }
-            result3 = _parse_header("A>B,C,%s,D" % qCon)
+            result4 = _parse_header("A>B,%s,C" % qCon)
 
-            self.assertEqual(expected3, result3)
+            self.assertEqual(expected4, result4)
 
     def test_invalid_format(self):
         testData = [
