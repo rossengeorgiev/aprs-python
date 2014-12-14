@@ -27,11 +27,11 @@ class IS(object):
     Note: sending of packets is not supported yet
 
     """
-    def __init__(self, callsign, host="rotate.aprs.net", port=14580, passwd="-1"):
+    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=14580):
         """
-        Host & port     - aprs-is server
         callsign        - used when login in
         passwd          - for verification, or "-1" if only listening
+        Host & port     - aprs-is server
         """
 
         self.logger = logging.getLogger(__name__)
