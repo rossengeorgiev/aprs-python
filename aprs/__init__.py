@@ -18,8 +18,11 @@ __version__ = version.__version__
 del version
 
 __author__ = "Rossen Georgiev"
-
-from .IS import IS
-from .parse import parse
-
 __all__ = ['IS', 'parse']
+
+from .parse import parse
+from . import IS
+
+
+class IS(IS.IS):
+    pass
