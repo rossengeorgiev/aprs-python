@@ -163,7 +163,7 @@ class IS(object):
                             callback(line)
                         else:
                             callback(parse(line))
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, SystemExit):
                 raise
             except (ConnectionDrop, ConnectionError):
                 self.close()
