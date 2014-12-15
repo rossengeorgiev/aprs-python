@@ -7,6 +7,7 @@ Available commands:
 	make init       - install python dependancies
 	make test       - run tests and coverage
 	make pylint     - code analysis
+	make build      - pylint + test
 endef
 
 export HELPBODY
@@ -20,4 +21,6 @@ test:
 	nosetests --verbosity 2 --with-coverage
 
 pylint:
-	pylint -r n -f colorized aprs
+	pylint -r n -f colorized aprs || true
+
+build: pylint test
