@@ -669,10 +669,16 @@ def _parse_header(head):
     except:
         raise ParseError("invalid packet header")
 
-    if len(fromcall) == 0:
-        raise ParseError("no fromcallsign in header")
+    # looking at aprs.fi, the rules for from/src callsign
+    # are a lot looser, causing a lot of packets to fail
+    # this check.
+    #
+    # if len(fromcall) == 0:
+    #    raise ParseError("no fromcallsign in header")
+    # _validate_callsign(fromcall, "fromcallsign")
 
-    _validate_callsign(fromcall, "fromcallsign")
+    if not 1 <= len(fromcall) <= 9 or not re.findall(r"^[a-z0-9]{0,9}(\-[a-z0-9]{1,8})?$", fromcall, re.I):
+        raise ParseError("fromcallsign is invalid")
 
     path = path.split(',')
 

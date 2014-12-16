@@ -93,13 +93,49 @@ class ParseHeader(unittest.TestCase):
 
             self.assertEqual(expected4, result4)
 
+    def test_valid_fromcallsigns(self):
+        testData = [
+            "A>CALL",
+            "4>CALL",
+            "aaabbbccc>CALL",
+            "AAABBBCCC>CALL",
+            "AA1B2BCC9>CALL",
+            "aa1b2bcc9>CALL",
+            "-1>CALL",
+            "-111>CALL",
+            "-98765432>CALL",
+            "-a>CALL",
+            "-abcZZZxx>CALL",
+            "a-a>CALL",
+            "a-aaaaaa>CALL",
+            "callsign1>CALL",
+            "AAABBB-9>CALL",
+            "AAABBBC-9>CALL",
+            "AAABBB-S>CALL",
+            "AAABBBC-S>CALL",
+            ]
+
+        for head in testData:
+            try:
+                _parse_header(head)
+            except ParseError, msg:
+                self.fail("{0}('{1}') PraseError, {2}"
+                          .format(_parse_header.__name__, head, msg))
+
     def test_invalid_format(self):
         testData = [
             "",     # empty header
-            ">",    # empty fromcall
-            "A>",   # empty tocall
-            "A>b",  # invalid tocall
-            "aaaaaaaaaaa",  # invalid fromcall
+            ">CALL;>test",    # empty fromcall
+            "A>:>test",   # empty tocall
+            "A>-99:>test",  # invalid tocall
+            "aaaAAAaaaA>CALL",  # fromcall too long
+            "->CALL",  # invalid fromcall
+            "A->CALL",  # invalid fromcall
+            "AB->CALL",  # invalid fromcall
+            "ABC->CALL",  # invalid fromcall
+            "9999->CALL",  # invalid fromcall
+            "999aaa11->CALL",  # invalid fromcall
+            "-AAA999AAA>CALL",  # invalid fromcall, too long
             "A>aaaaaaaaaaa",  # invalid tocall
             "A>B,1234567890,C",  # invalid call in path
             "A>B,C,1234567890,D",  # invalid call in path
@@ -107,7 +143,13 @@ class ParseHeader(unittest.TestCase):
             ]
 
         for head in testData:
-            self.assertRaises(ParseError, _parse_header, head)
+            try:
+                _parse_header(head)
+                self.fail("{0} didn't raise exception for: {1}"
+                          .format(_parse_header.__name__, head))
+            except ParseError:
+                continue
+
 
 if __name__ == '__main__':
     unittest.main()
