@@ -1,2 +1,4 @@
 *.swp
 *.pyc
+dist
+aprs.egg-info

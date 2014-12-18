@@ -8,6 +8,7 @@ Available commands:
 	make test       - run tests and coverage
 	make pylint     - code analysis
 	make build      - pylint + test
+
 endef
 
 export HELPBODY
@@ -24,3 +25,12 @@ pylint:
 	pylint -r n -f colorized aprs || true
 
 build: pylint test
+
+clean:
+	rm -rf dist aprs.egg-info
+
+dist: clean
+	python setup.py sdist
+
+upload:
+	twine upload dist/*
