@@ -1,5 +1,11 @@
 language: python
 python:
-  - "2.7"
-install: make init
-script: make build
+    - "2.7"
+install:
+    - make init
+    - pip install coveralls
+script:
+    make build
+after_success:
+    coveralls
+
