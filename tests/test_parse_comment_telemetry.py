@@ -1,7 +1,7 @@
 import unittest
 
-from aprs.parse import _parse_comment_telemetry
-from aprs import base91
+from aprslib.parse import _parse_comment_telemetry
+from aprslib import base91
 from random import randint
 
 

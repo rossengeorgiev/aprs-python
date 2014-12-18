@@ -3,13 +3,13 @@ from codecs import open
 from os import path
 
 here = path.abspath(path.dirname(__file__))
-__version__ = open('aprs/version.py').read().split("'")[1]
+__version__ = open('aprslib/version.py').read().split("'")[1]
 
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='aprs',
+    name='aprslib',
     version=__version__,
     description='Library for working with APRS',
     long_description=long_description,
@@ -27,8 +27,8 @@ setup(
     ],
     setup_requires=['pypandoc'],
     test_suite='tests',
-    keywords='aprs parse parsing aprs-is library base91',
-    packages=['aprs'],
+    keywords='aprs aprslib parse parsing aprs-is library base91',
+    packages=['aprslib'],
     install_requires=[],
     zip_safe=False,
 )

@@ -22,7 +22,7 @@ test:
 	nosetests --verbosity 2 --with-coverage
 
 pylint:
-	pylint -r n -f colorized aprs || true
+	pylint -r n -f colorized aprslib || true
 
 build: pylint test
 

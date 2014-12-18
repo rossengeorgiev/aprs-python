@@ -1,6 +1,6 @@
 import unittest
 
-from aprs.exceptions import *
+from aprslib.exceptions import *
 
 
 class ExceptionCorrectness(unittest.TestCase):

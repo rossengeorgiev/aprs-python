@@ -1,6 +1,6 @@
 import unittest
 
-from aprs import base91
+from aprslib import base91
 
 
 class a_FromDecimal(unittest.TestCase):

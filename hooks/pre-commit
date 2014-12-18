@@ -7,6 +7,6 @@ VER2=$((`echo $VERSTR | cut -d'-' -f2` + 1))
 
 VERSTR="__version__ = '${VER1}.${VER2}'"
 
-echo "$VERSTR" > aprs/version.py
+echo "$VERSTR" > aprslib/version.py
 
-git add aprs/version.py
+git add aprslib/version.py

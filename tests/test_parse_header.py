@@ -2,9 +2,9 @@ import unittest
 import string
 from random import randint, randrange, sample
 
-from aprs.parse import _parse_header
-from aprs.parse import _validate_callsign
-from aprs.exceptions import ParseError
+from aprslib.parse import _parse_header
+from aprslib.parse import _validate_callsign
+from aprslib.exceptions import ParseError
 
 
 class ValidateCallsign(unittest.TestCase):
