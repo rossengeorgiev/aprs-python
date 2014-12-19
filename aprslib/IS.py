@@ -224,7 +224,7 @@ class IS(object):
         """
         Sends login string to server
         """
-        login_str = "user {0} pass {1} vers pyaprs {3} filter {2}\r\n"
+        login_str = "user {0} pass {1} vers aprslib {3} filter {2}\r\n"
         login_str = login_str.format(
             self.callsign,
             self.passwd,
