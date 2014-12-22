@@ -3,13 +3,22 @@ APRS lib for Python
 
 |Build Status| |Coverage Status|
 
-| A tiny library for dealing with APRS. It can be used to connect and listen to the aprs-is feed as well as parse packets.
-| The following packet formats are supported:
+A tiny library for dealing with APRS. It can be used to connect and listen to the aprs-is feed as well as parse packets.
+The following packet formats are supported:
 
 -  normal/compressed position reports
 -  mic-e
 -  messages (inc. telemetry, bulletins, etc)
 -  base91 comment telemetry
+
+Install
+-----------
+
+You can grab the latest release from https://pypi.python.org/pypi/aprslib or via ``pip``
+
+.. code:: bash
+
+    pip install aprslib
 
 Examples
 -----------
@@ -21,7 +30,7 @@ Parsing
 
     import aprslib
     packet = aprslib.parse("M0XER-4>APRS64,TF3RPF,WIDE2*,qAR,TF3SUT-2:!/.(M4I^C,O `DXa/A=040849|#B>@\"v90!+|")
-    
+
 .. code:: python
 
     {'altitude': 12450.7752,
@@ -55,9 +64,9 @@ APRS-IS
     AIS = aprslib.IS("LZ1DEV")
     AIS.connect()
     # by default `raw` is False, then each line is ran through aprslib.parse()
-    AIS.consumer(callback, raw=True)  
-    
-.. code::
+    AIS.consumer(callback, raw=True)
+
+.. code:: text
 
     VK2TRL>APU25N,qAR,VK3KAW:;AWARC    *270052z3602.24S/14656.26E-Albury/Wodonga A.R.C. see www.awarc.org
     DL1TMF-1>APRS,TCPIP*,qAS,DL1TMF:!5022.38N/01146.58E- http://www.dl1tmf.de
