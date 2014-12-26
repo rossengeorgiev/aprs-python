@@ -11,7 +11,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='aprslib',
     version=__version__,
-    description='Library for working with APRS',
+    description='Module for accessing APRS-IS and parsing APRS packets',
     long_description=long_description,
     url='https://github.com/rossengeorgiev/aprs-python',
     author='Rossen Georgiev',
@@ -25,7 +25,6 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Communications :: Ham Radio',
     ],
-    setup_requires=['pypandoc'],
     test_suite='tests',
     keywords='aprs aprslib parse parsing aprs-is library base91',
     packages=['aprslib'],
