@@ -19,6 +19,7 @@
 IS class is used for connection to APRS-IS network
 """
 import socket
+import select
 import time
 import logging
 import sys
@@ -155,6 +156,8 @@ class IS(object):
         if not self._connected:
             raise ConnectionError("not connected to a server")
 
+        line = ''
+
         while True:
             try:
                 for line in self._socket_readlines(blocking):
@@ -265,8 +268,10 @@ class IS(object):
         while True:
             short_buf = ''
 
+            select.select([self.sock], [], [], None if blocking else 0)
+
             try:
-                short_buf = self.sock.recv(1024)
+                short_buf = self.sock.recv(4096)
 
                 # sock.recv returns empty if the connection drops
                 if not short_buf:
@@ -285,7 +290,3 @@ class IS(object):
                 line, self.buf = self.buf.split("\r\n", 1)
 
                 yield line
-
-            # lets not hog the CPU when there's nothing to do
-            if blocking:
-                time.sleep(0.1)
