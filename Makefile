@@ -19,7 +19,7 @@ init:
 	pip install -r req.txt
 
 test:
-	nosetests --verbosity 2 --with-coverage
+	nosetests --verbosity 2 --with-coverage --cover-package=aprslib
 
 pylint:
 	pylint -r n -f colorized aprslib || true
