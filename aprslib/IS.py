@@ -63,17 +63,6 @@ class IS(object):
         self._connected = False
         self.buf = ''
 
-    def callsign_filter(self, callsigns):
-        """
-        Sets a filter for the specified callsigns.
-        Only those will be sent to us by the server
-        """
-
-        if type(callsigns) is not list or len(callsigns) == 0:
-            return False
-
-        return self.set_filter("b/%s" % "/".join(callsigns))
-
     def set_filter(self, filter_text):
         """
         Set a specified aprs-is filter for this connection
@@ -84,8 +73,6 @@ class IS(object):
 
         if self._connected:
             self.sock.sendall("#filter %s\r\n" % self.filter)
-
-        return True
 
     def set_login(self, callsign, passwd):
         """
@@ -105,28 +92,30 @@ class IS(object):
         Initiate connection to APRS server and attempt to login
         """
 
-        if not self._connected:
-            while True:
-                try:
-                    self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
-                    self._connect()
+        if self._connected:
+            return
 
-                    self.logger.info("Sending login information")
-                    self._send_login()
+        while True:
+            try:
+                self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
+                self._connect()
 
-                    self.logger.info("Filter set to: %s", self.filter)
+                self.logger.info("Sending login information")
+                self._send_login()
 
-                    if self.passwd == "-1":
-                        self.logger.info("Login successful (receive only)")
-                    else:
-                        self.logger.info("Login successful")
+                self.logger.info("Filter set to: %s", self.filter)
 
-                    break
-                except:
-                    if not blocking:
-                        raise
+                if self.passwd == "-1":
+                    self.logger.info("Login successful (receive only)")
+                else:
+                    self.logger.info("Login successful")
 
-                time.sleep(30)  # attempt to reconnect after 30 seconds
+                break
+            except:
+                if not blocking:
+                    raise
+
+            time.sleep(30)  # attempt to reconnect after 30 seconds
 
     def close(self):
         """
