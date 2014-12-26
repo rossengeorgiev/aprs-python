@@ -514,8 +514,11 @@ def parse(raw_sentence):
             symbol_table = packet[0]
             symbol = packet[9]
 
-            latitude = 90 - (base91.to_decimal(packet[1:5]) / 380926.0)
-            longitude = -180 + (base91.to_decimal(packet[5:9]) / 190463.0)
+            try:
+                latitude = 90 - (base91.to_decimal(packet[1:5]) / 380926.0)
+                longitude = -180 + (base91.to_decimal(packet[5:9]) / 190463.0)
+            except ValueError:
+                raise ParseError("invalid characters in latitude/longitude encoding")
 
             # parse csT
 
