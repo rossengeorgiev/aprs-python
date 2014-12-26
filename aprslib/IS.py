@@ -97,19 +97,8 @@ class IS(object):
 
         while True:
             try:
-                self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
                 self._connect()
-
-                self.logger.info("Sending login information")
                 self._send_login()
-
-                self.logger.info("Filter set to: %s", self.filter)
-
-                if self.passwd == "-1":
-                    self.logger.info("Login successful (receive only)")
-                else:
-                    self.logger.info("Login successful")
-
                 break
             except:
                 if not blocking:
@@ -155,6 +144,8 @@ class IS(object):
                             callback(line)
                         else:
                             callback(parse(line))
+                    else:
+                        self.logger.debug("Server: %s", line)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except (ConnectionDrop, ConnectionError):
@@ -181,9 +172,15 @@ class IS(object):
         Attemps to open a connection to the server
         """
 
+        self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
+
         try:
             # 15 seconds connection timeout
             self.sock = socket.create_connection(self.server, 15)
+
+            raddr, rport = self.sock.getpeername()
+
+            self.logger.info("Connected to %s:%s", raddr, rport)
 
             # 5 second timeout to receive server banner
             self.sock.setblocking(1)
@@ -199,7 +196,11 @@ class IS(object):
                 self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
                 # pylint: enable=E1103
 
-            if self.sock.recv(512)[0] != "#":
+            banner = self.sock.recv(512)
+
+            if banner[0] == "#":
+                self.logger.debug("Banner: %s", banner.rstrip())
+            else:
                 raise ConnectionError("invalid banner from server")
 
         except Exception, e:
@@ -224,10 +225,14 @@ class IS(object):
             __version__
             )
 
+        self.logger.info("Sending login information")
+
         try:
             self.sock.sendall(login_str)
             self.sock.settimeout(5)
-            test = self.sock.recv(len(login_str) + 100)
+            test = self.sock.recv(len(login_str) + 100).rstrip()
+
+            self.logger.info("Server: %s", test)
 
             (x, x, callsign, status, x) = test.split(' ', 4)
 
@@ -238,9 +243,14 @@ class IS(object):
             if status != "verified," and self.passwd != "-1":
                 raise LoginError("Password is incorrect")
 
-        except LoginError, e:
+            if self.passwd == "-1":
+                self.logger.info("Login successful (receive only)")
+            else:
+                self.logger.info("Login successful")
+
+        except LoginError:
             self.close()
-            raise LoginError("failed to login: %s" % e)
+            raise
         except:
             self.close()
             raise LoginError("failed to login")
