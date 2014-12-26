@@ -53,6 +53,7 @@ class IS(object):
         """
 
         self.logger = logging.getLogger(__name__)
+        self._parse = parse
 
         self.set_server(host, port)
         self.set_login(callsign, passwd)
@@ -87,9 +88,12 @@ class IS(object):
         """
         self.server = (host, port)
 
-    def connect(self, blocking=False):
+    def connect(self, blocking=False, retry=30):
         """
         Initiate connection to APRS server and attempt to login
+
+        blocking = False     - Should we block until connected and logged-in
+        retry = 30           - Retry interval in seconds
         """
 
         if self._connected:
@@ -104,7 +108,7 @@ class IS(object):
                 if not blocking:
                     raise
 
-            time.sleep(30)  # attempt to reconnect after 30 seconds
+            time.sleep(retry)
 
     def close(self):
         """
@@ -143,7 +147,7 @@ class IS(object):
                         if raw:
                             callback(line)
                         else:
-                            callback(parse(line))
+                            callback(self._parse(line))
                     else:
                         self.logger.debug("Server: %s", line)
             except (KeyboardInterrupt, SystemExit):
@@ -157,7 +161,7 @@ class IS(object):
                     self.connect(blocking=blocking)
                     continue
             except GenericError:
-                continue
+                pass
             except StopIteration:
                 break
             except:
@@ -167,16 +171,21 @@ class IS(object):
             if not blocking:
                 break
 
+    def _open_socket(self):
+        """
+        Creates a socket
+        """
+        self.sock = socket.create_connection(self.server, 15)
+
     def _connect(self):
         """
-        Attemps to open a connection to the server
+        Attemps connection to the server
         """
 
         self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
 
         try:
-            # 15 seconds connection timeout
-            self.sock = socket.create_connection(self.server, 15)
+            self._open_socket()
 
             raddr, rport = self.sock.getpeername()
 
@@ -203,10 +212,13 @@ class IS(object):
             else:
                 raise ConnectionError("invalid banner from server")
 
-        except Exception, e:
+        except ConnectionError:
+            self.close()
+            raise
+        except (socket.error, socket.timeout) as e:
             self.close()
 
-            if e == "timed out":
+            if str(e) == "timed out":
                 raise ConnectionError("no banner from server")
             else:
                 raise ConnectionError(e)
@@ -232,14 +244,14 @@ class IS(object):
             self.sock.settimeout(5)
             test = self.sock.recv(len(login_str) + 100).rstrip()
 
-            self.logger.info("Server: %s", test)
+            self.logger.debug("Server: %s", test)
 
             (x, x, callsign, status, x) = test.split(' ', 4)
 
             if callsign == "":
-                raise LoginError("No callsign provided")
+                raise LoginError("Server responded with empty callsign???")
             if callsign != self.callsign:
-                raise LoginError("Server: %s" % test[2:])
+                raise LoginError("Server: %s" % test)
             if status != "verified," and self.passwd != "-1":
                 raise LoginError("Password is incorrect")
 
@@ -261,7 +273,7 @@ class IS(object):
         """
         try:
             self.sock.setblocking(0)
-        except socket.error, e:
+        except socket.error as e:
             raise ConnectionDrop("connection dropped")
 
         while True:
@@ -275,13 +287,11 @@ class IS(object):
                 # sock.recv returns empty if the connection drops
                 if not short_buf:
                     raise ConnectionDrop("connection dropped")
-            except socket.error, e:
+            except socket.error as e:
                 if "Resource temporarily unavailable" in e:
                     if not blocking:
                         if len(self.buf) == 0:
                             break
-            except Exception:
-                raise
 
             self.buf += short_buf
 
