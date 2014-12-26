@@ -365,7 +365,7 @@ def parse(raw_sentence):
         # the while loop is used to easily break out once a match is found
         while True:
             # try to match bulletin
-            match = re.findall(r"^BLN([0-9])([a-zA-Z0-9 \-]{5}):(.{0,67})", body)
+            match = re.findall(r"^BLN([0-9])([a-z0-9_ \-]{5}):(.{0,67})", body, re.I)
             if match:
                 bid, identifier, text = match[0]
                 identifier = identifier.rstrip(' ')
