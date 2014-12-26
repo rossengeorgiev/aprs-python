@@ -19,6 +19,7 @@
 IS class is used for connection to APRS-IS network
 """
 import socket
+import select
 import time
 import logging
 import sys
@@ -62,17 +63,6 @@ class IS(object):
         self._connected = False
         self.buf = ''
 
-    def callsign_filter(self, callsigns):
-        """
-        Sets a filter for the specified callsigns.
-        Only those will be sent to us by the server
-        """
-
-        if type(callsigns) is not list or len(callsigns) == 0:
-            return False
-
-        return self.set_filter("b/%s" % "/".join(callsigns))
-
     def set_filter(self, filter_text):
         """
         Set a specified aprs-is filter for this connection
@@ -83,8 +73,6 @@ class IS(object):
 
         if self._connected:
             self.sock.sendall("#filter %s\r\n" % self.filter)
-
-        return True
 
     def set_login(self, callsign, passwd):
         """
@@ -104,28 +92,19 @@ class IS(object):
         Initiate connection to APRS server and attempt to login
         """
 
-        if not self._connected:
-            while True:
-                try:
-                    self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
-                    self._connect()
+        if self._connected:
+            return
 
-                    self.logger.info("Sending login information")
-                    self._send_login()
+        while True:
+            try:
+                self._connect()
+                self._send_login()
+                break
+            except:
+                if not blocking:
+                    raise
 
-                    self.logger.info("Filter set to: %s", self.filter)
-
-                    if self.passwd == "-1":
-                        self.logger.info("Login successful (receive only)")
-                    else:
-                        self.logger.info("Login successful")
-
-                    break
-                except:
-                    if not blocking:
-                        raise
-
-                time.sleep(30)  # attempt to reconnect after 30 seconds
+            time.sleep(30)  # attempt to reconnect after 30 seconds
 
     def close(self):
         """
@@ -155,6 +134,8 @@ class IS(object):
         if not self._connected:
             raise ConnectionError("not connected to a server")
 
+        line = ''
+
         while True:
             try:
                 for line in self._socket_readlines(blocking):
@@ -163,6 +144,8 @@ class IS(object):
                             callback(line)
                         else:
                             callback(parse(line))
+                    else:
+                        self.logger.debug("Server: %s", line)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except (ConnectionDrop, ConnectionError):
@@ -189,9 +172,15 @@ class IS(object):
         Attemps to open a connection to the server
         """
 
+        self.logger.info("Attempting connection to %s:%s", self.server[0], self.server[1])
+
         try:
             # 15 seconds connection timeout
             self.sock = socket.create_connection(self.server, 15)
+
+            raddr, rport = self.sock.getpeername()
+
+            self.logger.info("Connected to %s:%s", raddr, rport)
 
             # 5 second timeout to receive server banner
             self.sock.setblocking(1)
@@ -207,7 +196,11 @@ class IS(object):
                 self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
                 # pylint: enable=E1103
 
-            if self.sock.recv(512)[0] != "#":
+            banner = self.sock.recv(512)
+
+            if banner[0] == "#":
+                self.logger.debug("Banner: %s", banner.rstrip())
+            else:
                 raise ConnectionError("invalid banner from server")
 
         except Exception, e:
@@ -232,10 +225,14 @@ class IS(object):
             __version__
             )
 
+        self.logger.info("Sending login information")
+
         try:
             self.sock.sendall(login_str)
             self.sock.settimeout(5)
-            test = self.sock.recv(len(login_str) + 100)
+            test = self.sock.recv(len(login_str) + 100).rstrip()
+
+            self.logger.info("Server: %s", test)
 
             (x, x, callsign, status, x) = test.split(' ', 4)
 
@@ -246,9 +243,14 @@ class IS(object):
             if status != "verified," and self.passwd != "-1":
                 raise LoginError("Password is incorrect")
 
-        except LoginError, e:
+            if self.passwd == "-1":
+                self.logger.info("Login successful (receive only)")
+            else:
+                self.logger.info("Login successful")
+
+        except LoginError:
             self.close()
-            raise LoginError("failed to login: %s" % e)
+            raise
         except:
             self.close()
             raise LoginError("failed to login")
@@ -265,8 +267,10 @@ class IS(object):
         while True:
             short_buf = ''
 
+            select.select([self.sock], [], [], None if blocking else 0)
+
             try:
-                short_buf = self.sock.recv(1024)
+                short_buf = self.sock.recv(4096)
 
                 # sock.recv returns empty if the connection drops
                 if not short_buf:
@@ -285,7 +289,3 @@ class IS(object):
                 line, self.buf = self.buf.split("\r\n", 1)
 
                 yield line
-
-            # lets not hog the CPU when there's nothing to do
-            if blocking:
-                time.sleep(0.1)
