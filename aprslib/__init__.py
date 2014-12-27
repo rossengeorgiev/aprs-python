@@ -27,16 +27,21 @@ from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-from . import version
-__version__ = version.__version__
-del version
+from .version import __version__ as ref_version
+__version__ = ref_version
+del ref_version
 
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse']
 
-from .parse import parse
-from . import IS
+from .parse import parse as refparse
+parse = refparse
+del refparse
+
+from .IS import IS as refIS
 
 
-class IS(IS.IS):
+class IS(refIS):
     pass
+
+del refIS
