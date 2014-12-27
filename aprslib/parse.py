@@ -118,29 +118,22 @@ def parse(raw_sentence):
 
             parsed.update({'raw_timestamp': rawts})
 
+            timestamp = 0
             try:
                 if form in "hz/":
-                    if form == 'h':  # zulu hhmmss format
-                        timestamp = utc.strptime(
-                            "%s %s %s %s" % (utc.year, utc.month, utc.day, ts),
-                            "%Y %m %d %H%M%S"
-                            )
-                    elif form == 'z':  # zulu ddhhss format
-                        timestamp = utc.strptime(
-                            "%s %s %s" % (utc.year, utc.month, ts),
-                            "%Y %m %d%M%S"
-                            )
-                    elif form == '/':  # '/' local ddhhss format
-                        timestamp = utc.strptime(
-                            "%s %s %s" % (utc.year, utc.month, ts),
-                            "%Y %m %d%M%S"
-                            )
+                    # zulu hhmmss format
+                    if form == 'h':
+                        timestamp = "%s%s%s%s" % (utc.year, utc.month, utc.day, ts)
+                    # zulu ddhhmm format
+                    # '/' local ddhhmm format
+                    elif form in 'z/':
+                        timestamp = "%s%s%s%s" % (utc.year, utc.month, ts, utc.second)
 
+                    timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
                     timestamp = time.mktime(timestamp.timetuple())
-                else:
-                    timestamp = 0
-            except:
-                timestamp = 0
+            except Exception as exp:
+                logger.debug(exp)
+                pass
 
             parsed.update({'timestamp': int(timestamp)})
 
