@@ -45,7 +45,7 @@ class IS(object):
     Note: sending of packets is not supported yet
 
     """
-    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=14580):
+    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152):
         """
         callsign        - used when login in
         passwd          - for verification, or "-1" if only listening
@@ -59,7 +59,7 @@ class IS(object):
         self.set_login(callsign, passwd)
 
         self.sock = None
-        self.filter = "t/poimqstunw"  # default filter, everything
+        self.filter = ""  # default filter, everything
 
         self._connected = False
         self.buf = ''
@@ -229,11 +229,11 @@ class IS(object):
         """
         Sends login string to server
         """
-        login_str = "user {0} pass {1} vers aprslib {3} filter {2}\r\n"
+        login_str = "user {0} pass {1} vers aprslib {3}{2}\r\n"
         login_str = login_str.format(
             self.callsign,
             self.passwd,
-            self.filter,
+            (" filter " + self.filter) if self.filter != "" else "",
             __version__
             )
 
