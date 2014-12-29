@@ -631,8 +631,34 @@ def parse(raw_sentence):
             extra = extra[1:]
 
         parsed.update({'comment': extra.strip(' ')})
-    else:
+
+    # NOT SUPPORTED FORMATS
+    #
+    # % - agrelo
+    # , - invalid/test format
+    # { - user defined
+    # ? - general query format
+    # T - telemetry report
+    # * - complete weather report
+    # _ - positionless weather report
+    # # - raw weather report
+    # $
+    # ) - item report
+    # ; - object report
+    # [ - maidenhead locator beacon
+    elif packet_type in '%,{?T*_#$);[<':
         raise UnknownFormat("format is not supported", raw_sentence)
+    else:
+        if not re.match(r"^(AIR.*|ALL.*|AP.*|BEACON|CQ.*|GPS.*|DF.*|DGPS.*|"
+                        "DRILL.*|DX.*|ID.*|JAVA.*|MAIL.*|MICE.*|QST.*|QTH.*|"
+                        "RTCM.*|SKY.*|SPACE.*|SPC.*|SYM.*|TEL.*|TEST.*|TLM.*|"
+                        "WX.*|ZIP.*)$", parsed['to']):
+            raise UnknownFormat("format is not supported", raw_sentence)
+
+        parsed.update({
+            'format': 'beacon',
+            'text': packet_type + body,
+            })
 
     logger.debug("Parsed ok.")
     return parsed
