@@ -24,7 +24,7 @@ import time
 import logging
 import sys
 
-from .version import __version__
+from . import __version__
 from .parse import parse
 from .exceptions import (
     GenericError,
