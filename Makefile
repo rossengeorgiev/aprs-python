@@ -33,5 +33,6 @@ clean:
 dist: clean
 	python setup.py sdist
 
-upload:
-	twine upload dist/*
+upload: dist
+	python setup.py register -r pypi
+	twine upload -r pypi dist/*
