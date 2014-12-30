@@ -620,7 +620,9 @@ def parse(raw_sentence):
     # [ - maidenhead locator beacon
     elif packet_type in '%,{?T*_#$);[<':
         raise UnknownFormat("format is not supported", raw_sentence)
-    else:
+
+    # if we fail all attempts to parse, try beacon packet
+    if 'format' not in parsed:
         if not re.match(r"^(AIR.*|ALL.*|AP.*|BEACON|CQ.*|GPS.*|DF.*|DGPS.*|"
                         "DRILL.*|DX.*|ID.*|JAVA.*|MAIL.*|MICE.*|QST.*|QTH.*|"
                         "RTCM.*|SKY.*|SPACE.*|SPC.*|SYM.*|TEL.*|TEST.*|TLM.*|"
