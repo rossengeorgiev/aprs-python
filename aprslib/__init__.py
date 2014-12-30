@@ -1,4 +1,4 @@
-# aprs - Python library for dealing with APRS
+# aprslib - Python library for working with APRS
 # Copyright (C) 2013-2014 Rossen Georgiev
 #
 # This program is free software; you can redistribute it and/or modify
@@ -31,18 +31,12 @@ __version__ = "0.6.31"
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
-from .parse import parse as refparse
-parse = refparse
-del refparse
+from .exceptions import *
+from .parse import parse
+from .passcode import passcode
 
-from .passcode import passcode as refpasscode
-passcode = refpasscode
-del refpasscode
-
-from .IS import IS as refIS
+from .IS import IS
 
 
-class IS(refIS):
+class IS(IS):
     pass
-
-del refIS

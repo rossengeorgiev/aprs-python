@@ -1,4 +1,4 @@
-# aprs - Python library for dealing with APRS
+# aprslib - Python library for working with APRS
 # Copyright (C) 2013-2014 Rossen Georgiev
 #
 # This program is free software; you can redistribute it and/or modify

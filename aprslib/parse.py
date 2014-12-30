@@ -1,4 +1,4 @@
-# aprs - Python library for dealing with APRS
+# aprslib - Python library for working with APRS
 # Copyright (C) 2013-2014 Rossen Georgiev
 #
 # This program is free software; you can redistribute it and/or modify
@@ -59,7 +59,7 @@ def parse(raw_sentence):
     """
     Parses an APRS packet and returns a dict with decoded data
 
-     - All attributes are in meteric units
+     - All attributes are in metric units
 
      Supports:
       * normal/compressed/mic-e position reports
