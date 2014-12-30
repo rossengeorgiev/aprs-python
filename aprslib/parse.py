@@ -652,7 +652,7 @@ def parse(raw_sentence):
         if not re.match(r"^(AIR.*|ALL.*|AP.*|BEACON|CQ.*|GPS.*|DF.*|DGPS.*|"
                         "DRILL.*|DX.*|ID.*|JAVA.*|MAIL.*|MICE.*|QST.*|QTH.*|"
                         "RTCM.*|SKY.*|SPACE.*|SPC.*|SYM.*|TEL.*|TEST.*|TLM.*|"
-                        "WX.*|ZIP.*)$", parsed['to']):
+                        "WX.*|ZIP.*|UIDIGI)$", parsed['to']):
             raise UnknownFormat("format is not supported", raw_sentence)
 
         parsed.update({
