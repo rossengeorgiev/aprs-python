@@ -343,7 +343,7 @@ def parse(raw_sentence):
                 break
 
             # try to match announcement
-            match = re.findall(r"^BLN([A-Z])([a-zA-Z0-9 \-]{5}):(.{0,67})", body)
+            match = re.findall(r"^BLN([A-Z])([a-zA-Z0-9_ \-]{5}):(.{0,67})", body)
             if match:
                 aid, identifier, text = match[0]
                 identifier = identifier.rstrip(' ')
@@ -357,7 +357,7 @@ def parse(raw_sentence):
                 break
 
             # validate addresse
-            match = re.findall(r"^([a-zA-Z0-9 \-]{9}):(.*)$", body)
+            match = re.findall(r"^([a-zA-Z0-9_ \-]{9}):(.*)$", body)
             if not match:
                 raise ParseError("invalid addresse in message", raw_sentence)
 
