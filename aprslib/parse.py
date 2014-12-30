@@ -104,41 +104,21 @@ def parse(raw_sentence):
 
     # attempt to parse the body
     # ------------------------------------------------------------------------------
+    # STATUS PACKET
+    #
+    # >DDHHMMzComments
+    # >Comments
 
-    # try and parse timestamp first for status and position reports
-    if packet_type in '>/@':
-        # try to parse timestamp
-        match = re.findall(r"^((\d{6})(.))$", body[0:7])
-        if match:
-            rawts, ts, form = match[0]
-            utc = datetime.utcnow()
+    if packet_type == '>':
+        logger.debug("Packet is just a status message")
 
-            if packet_type == '>' and form != 'z':
-                raise ParseError("Time format for status reports should be zulu", raw_sentence)
+        result, body = _parse_timestamp(body, packet_type)
 
-            parsed.update({'raw_timestamp': rawts})
-
-            timestamp = 0
-            try:
-                if form in "hz/":
-                    # zulu hhmmss format
-                    if form == 'h':
-                        timestamp = "%s%s%s%s" % (utc.year, utc.month, utc.day, ts)
-                    # zulu ddhhmm format
-                    # '/' local ddhhmm format
-                    elif form in 'z/':
-                        timestamp = "%s%s%s%s" % (utc.year, utc.month, ts, utc.second)
-
-                    timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
-                    timestamp = time.mktime(timestamp.timetuple())
-            except Exception as exp:
-                logger.debug(exp)
-                pass
-
-            parsed.update({'timestamp': int(timestamp)})
-
-            # remove datetime from the body for further parsing
-            body = body[7:]
+        parsed.update(result)
+        parsed.update({
+            'format': 'status',
+            'status': body.strip(' ')
+            })
 
     # Mic-encoded packet
     #
@@ -146,7 +126,7 @@ def parse(raw_sentence):
     # 'lllc/s$/>........         Mic-E message capability
     # `lllc/s$/>........         Mic-E old posit
 
-    if packet_type in "`'":
+    elif packet_type in "`'":
         logger.debug("Attempting to parse as mic-e packet")
         parsed.update({'format': 'mic-e'})
 
@@ -329,17 +309,6 @@ def parse(raw_sentence):
             # rest is a comment
             parsed.update({'comment': body.strip(' ')})
 
-    # STATUS PACKET
-    #
-    # >DDHHMMzComments
-    # >Comments
-
-    elif packet_type == '>':
-        logger.debug("Packet is just a status message")
-        parsed.update({
-            'format': 'status',
-            'status': body.strip(' ')
-            })
 
     # MESSAGE PACKET
     #
@@ -489,6 +458,10 @@ def parse(raw_sentence):
     elif packet_type in '!=/@':
         parsed.update({"messagecapable": packet_type in '@='})
 
+        if packet_type in "/@":
+            result, body = _parse_timestamp(body, packet_type)
+            parsed.update(result)
+
         if len(body) == 0 and 'timestamp' in parsed:
             raise ParseError("invalid position report format", raw_sentence)
 
@@ -530,7 +503,6 @@ def parse(raw_sentence):
                 parsed.update({'speed': (1.08 ** s1 - 1) * 1.852})  # mul = convert knts to kmh
             elif c1 == 90:
                 parsed.update({'radiorange': (2 * 1.08 ** s1) * 1.609344})  # mul = convert mph to kmh
-
 
         # normal position report
         else:
@@ -662,6 +634,47 @@ def parse(raw_sentence):
 
     logger.debug("Parsed ok.")
     return parsed
+
+
+#
+# Helper parse functions
+#
+
+def _parse_timestamp(body, packet_type=''):
+    parsed = {}
+
+    match = re.findall(r"^((\d{6})(.))$", body[0:7])
+    if match:
+        rawts, ts, form = match[0]
+        utc = datetime.utcnow()
+
+        timestamp = 0
+
+        if packet_type == '>' and form != 'z':
+            pass
+        if form in "hz/":
+            body = body[7:]
+
+            try:
+                # zulu hhmmss format
+                if form == 'h':
+                    timestamp = "%s%s%s%s" % (utc.year, utc.month, utc.day, ts)
+                # zulu ddhhmm format
+                # '/' local ddhhmm format
+                elif form in 'z/':
+                    timestamp = "%s%s%s%s" % (utc.year, utc.month, ts, utc.second)
+
+                timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
+                timestamp = time.mktime(timestamp.timetuple())
+
+                parsed.update({'raw_timestamp': rawts})
+            except Exception as exp:
+                timestamp = 0
+                logger.debug(exp)
+
+        parsed.update({'timestamp': int(timestamp)})
+
+    return (parsed, body)
 
 
 def _validate_callsign(callsign, prefix=""):
