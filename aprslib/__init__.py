@@ -23,6 +23,13 @@ Currently the library provides facilities to:
     - Connect and listen to an aprs-is packet feed
 """
 
+# handles reloading
+if 'IS' in globals():
+    modules = __import__('sys').modules
+    for m in modules.keys():
+        if m[:len(__name__)+1] == "%s." % __name__:
+            del modules[m]
+
 from datetime import date as _date
 __date__ = str(_date.today())
 del _date
