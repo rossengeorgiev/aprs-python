@@ -31,9 +31,14 @@ from .exceptions import (
     ConnectionDrop,
     ConnectionError,
     LoginError,
+    ParseError,
+    UnknownFormat,
     )
 
 __all__ = ['IS']
+
+logging.addLevelName(11, "ParseError")
+logging.addLevelName(9, "UnknownFormat")
 
 
 class IS(object):
@@ -150,6 +155,12 @@ class IS(object):
                             callback(self._parse(line))
                     else:
                         self.logger.debug("Server: %s", line)
+            except ParseError as exp:
+                self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
+            except UnknownFormat as exp:
+                self.logger.log(9, "%s\n    Packet: %s", exp.message, exp.packet)
+            except LoginError as exp:
+                self.logger.error("%s: %s", exp.__class__.__name__, exp.message)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except (ConnectionDrop, ConnectionError):
