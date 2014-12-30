@@ -14,35 +14,21 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
 """
-APRS library in Python
-
-Currently the library provides facilities to:
-    - parse APRS packets
-    - Connect and listen to an aprs-is packet feed
+Contains a function for generating passcode from callsign
 """
 
-from datetime import date as _date
-__date__ = str(_date.today())
-del _date
 
-__version__ = "0.6.31"
-__author__ = "Rossen Georgiev"
-__all__ = ['IS', 'parse', 'passcode']
+def passcode(callsign):
+    """
+    Takes a CALLSIGN and returns passcode
+    """
+    assert isinstance(callsign, str)
 
-from .parse import parse as refparse
-parse = refparse
-del refparse
+    callsign = callsign.split('-')[0].upper()
 
-from .passcode import passcode as refpasscode
-passcode = refpasscode
-del refpasscode
+    code = 0x73e2
+    for i, char in enumerate(callsign):
+        code ^= ord(char) << (8 if not i % 2 else 0)
 
-from .IS import IS as refIS
-
-
-class IS(refIS):
-    pass
-
-del refIS
+    return code & 0x7fff
