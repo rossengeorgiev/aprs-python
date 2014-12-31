@@ -1,4 +1,4 @@
-# aprs - Python library for dealing with APRS
+# aprslib - Python library for working with APRS
 # Copyright (C) 2013-2014 Rossen Georgiev
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,6 @@
 """
 Contains exception definitions for the module
 """
-import logging
 
 __all__ = [
     "GenericError",
@@ -29,10 +28,6 @@ __all__ = [
     "ConnectionDrop",
     ]
 
-logging.raiseExceptions = False
-logging.addLevelName(11, "ParseError")
-logging.addLevelName(9, "UnknownFormat")
-
 
 class GenericError(Exception):
     """
@@ -40,8 +35,6 @@ class GenericError(Exception):
     """
     def __init__(self, message):
         super(GenericError, self).__init__(message)
-
-        self.logger = logging.getLogger(__name__)
 
 
 class UnknownFormat(GenericError):
@@ -53,7 +46,6 @@ class UnknownFormat(GenericError):
         super(UnknownFormat, self).__init__(message)
 
         self.packet = packet
-        self.logger.log(9, "%s\n    Packet: %s", message, packet)
 
 
 class ParseError(GenericError):
@@ -64,7 +56,6 @@ class ParseError(GenericError):
         super(ParseError, self).__init__(message)
 
         self.packet = packet
-        self.logger.log(11, "%s\n    Packet: %s", message, packet)
 
 
 class LoginError(GenericError):
@@ -73,8 +64,6 @@ class LoginError(GenericError):
     """
     def __init__(self, message):
         super(LoginError, self).__init__(message)
-
-        self.logger.error("%s: %s", self.__class__.__name__, message)
 
 
 class ConnectionError(GenericError):

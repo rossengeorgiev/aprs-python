@@ -1,4 +1,4 @@
-# aprs - Python library for dealing with APRS
+# aprslib - Python library for working with APRS
 # Copyright (C) 2013-2014 Rossen Georgiev
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,16 +24,21 @@ import time
 import logging
 import sys
 
-from .version import __version__
+from . import __version__
 from .parse import parse
 from .exceptions import (
     GenericError,
     ConnectionDrop,
     ConnectionError,
     LoginError,
+    ParseError,
+    UnknownFormat,
     )
 
 __all__ = ['IS']
+
+logging.addLevelName(11, "ParseError")
+logging.addLevelName(9, "UnknownFormat")
 
 
 class IS(object):
@@ -45,7 +50,7 @@ class IS(object):
     Note: sending of packets is not supported yet
 
     """
-    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=14580):
+    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152):
         """
         callsign        - used when login in
         passwd          - for verification, or "-1" if only listening
@@ -59,7 +64,7 @@ class IS(object):
         self.set_login(callsign, passwd)
 
         self.sock = None
-        self.filter = "t/poimqstunw"  # default filter, everything
+        self.filter = ""  # default filter, everything
 
         self._connected = False
         self.buf = ''
@@ -122,6 +127,31 @@ class IS(object):
         if self.sock is not None:
             self.sock.close()
 
+    def sendall(self, line):
+        """
+        Send a line, or multiple lines sperapted by '\\r\\n'
+        """
+        if not self._connected:
+            raise ConnectionError("not connected")
+
+        if isinstance(line, unicode):
+            line = line.encode('utf8')
+        elif not isinstance(line, str):
+            line = str(line)
+
+        if line == "":
+            return
+
+        line = line.rstrip("\r\n") + "\r\n"
+
+        try:
+            self.sock.setblocking(1)
+            self.sock.settimeout(5)
+            self.sock.sendall(line)
+        except socket.error as exp:
+            self.close()
+            raise ConnectionError(str(exp))
+
     def consumer(self, callback, blocking=True, immortal=False, raw=False):
         """
         When a position sentence is received, it will be passed to the callback function
@@ -150,6 +180,12 @@ class IS(object):
                             callback(self._parse(line))
                     else:
                         self.logger.debug("Server: %s", line)
+            except ParseError as exp:
+                self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
+            except UnknownFormat as exp:
+                self.logger.log(9, "%s\n    Packet: %s", exp.message, exp.packet)
+            except LoginError as exp:
+                self.logger.error("%s: %s", exp.__class__.__name__, exp.message)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except (ConnectionDrop, ConnectionError):
@@ -229,11 +265,11 @@ class IS(object):
         """
         Sends login string to server
         """
-        login_str = "user {0} pass {1} vers aprslib {3} filter {2}\r\n"
+        login_str = "user {0} pass {1} vers aprslib {3}{2}\r\n"
         login_str = login_str.format(
             self.callsign,
             self.passwd,
-            self.filter,
+            (" filter " + self.filter) if self.filter != "" else "",
             __version__
             )
 

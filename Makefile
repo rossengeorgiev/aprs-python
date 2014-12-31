@@ -19,6 +19,7 @@ init:
 	pip install -r req.txt
 
 test:
+	rm -f aprslib/*.pyc
 	nosetests --verbosity 2 --with-coverage --cover-package=aprslib
 
 pylint:
@@ -27,10 +28,11 @@ pylint:
 build: pylint test
 
 clean:
-	rm -rf dist aprs.egg-info
+	rm -rf dist aprs.egg-info aprslib/*.pyc test/*.pyc .coverage
 
 dist: clean
 	python setup.py sdist
 
-upload:
-	twine upload dist/*
+upload: dist
+	python setup.py register -r pypi
+	twine upload -r pypi dist/*

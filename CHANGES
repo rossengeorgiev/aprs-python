@@ -1,0 +1,13 @@
+CHANGES
+-------
+
+# v0.6.32
+
+- sendall() method to IS, allows sending of packets
+- corrently parsing beacon packets
+- changed default port to full feed, instead of bi-directional filter
+- added passcode() to generate passcode for a given callsign
+- moved exception logging logic from exceptions.py to IS.py
+  Should work the same as before
+- reload(aprslib) should now work
+- various bug fixes
