@@ -331,21 +331,34 @@ class TestCase_IS_consumer(unittest.TestCase):
         self.ais._socket_readlines(False).AndRaise(SystemExit)
         self.ais._socket_readlines(False).AndRaise(KeyboardInterrupt)
         self.ais._socket_readlines(False).AndRaise(Exception("random"))
-        self.ais._socket_readlines(False).AndRaise(StopIteration)
+        self.ais._socket_readlines(False).AndRaise(aprslib.exceptions.ParseError('x'))
+        self.ais._socket_readlines(False).AndRaise(aprslib.exceptions.UnknownFormat('x'))
+        self.ais._socket_readlines(False).AndRaise(aprslib.exceptions.LoginError('x'))
         self.ais._socket_readlines(False).AndRaise(aprslib.exceptions.GenericError('x'))
+        self.ais._socket_readlines(False).AndRaise(StopIteration)
         self.m.ReplayAll()
 
         def testcallback(line):
             pass
 
-        for e in [SystemExit, KeyboardInterrupt, Exception]:
+        # should raise
+        for e in [
+                SystemExit,
+                KeyboardInterrupt,
+                Exception
+                ]:
             with self.assertRaises(e):
                 self.ais.consumer(callback=testcallback, blocking=False, raw=False)
 
-        # StopIteration
-        self.ais.consumer(callback=testcallback, blocking=False, raw=False)
-        # GenericError
-        self.ais.consumer(callback=testcallback, blocking=False, raw=False)
+        # non raising
+        for e in [
+                aprslib.exceptions.ParseError,
+                aprslib.exceptions.UnknownFormat,
+                aprslib.exceptions.LoginError,
+                aprslib.exceptions.GenericError,
+                StopIteration
+                ]:
+            self.ais.consumer(callback=testcallback, blocking=False, raw=False)
 
         self.m.VerifyAll()
 
