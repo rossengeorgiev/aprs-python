@@ -28,7 +28,7 @@ pylint:
 build: pylint test
 
 clean:
-	rm -rf dist aprs.egg-info aprslib/*.pyc
+	rm -rf dist aprs.egg-info aprslib/*.pyc test/*.pyc .coverage
 
 dist: clean
 	python setup.py sdist
