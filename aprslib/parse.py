@@ -108,19 +108,29 @@ def parse(packet):
     try:
         # NOT SUPPORTED FORMATS
         #
+        # # - raw weather report
+        # $ - raw gps
         # % - agrelo
+        # & - reserved
+        # ( - unused
+        # ) - item report
+        # * - complete weather report
+        # + - reserved
         # , - invalid/test format
-        # { - user defined
+        # - - unused
+        # . - reserved
+        # ; - object report
+        # < - station capabilities
         # ? - general query format
         # T - telemetry report
-        # * - complete weather report
-        # _ - positionless weather report
-        # # - raw weather report
-        # $
-        # ) - item report
-        # ; - object report
         # [ - maidenhead locator beacon
-        if packet_type in '%,{?T*_#$);[<':
+        # \ - unused
+        # ] - unused
+        # ^ - unused
+        # _ - positionless weather report
+        # { - user defined
+        # } - 3rd party traffic
+        if packet_type in '#$%)*,;<?T[_{}':
             raise UnknownFormat("format is not supported", packet)
 
         # STATUS PACKET
@@ -153,7 +163,13 @@ def parse(packet):
             parsed.update(result)
 
         # postion report (regular or compressed)
-        elif packet_type in '!=/@':
+        elif (packet_type in '!=/@' or
+              0 <= body.find('!') < 40):  # page 28 of spec (PDF)
+
+            if packet_type not in '!=/@':
+                prefix, body = body.split('!', 1)
+                packet_type = '!'
+
             parsed.update({"messagecapable": packet_type in '@='})
 
             # decode timestamp
@@ -640,7 +656,7 @@ def _parse_message(body):
         # validate addresse
         match = re.findall(r"^([a-zA-Z0-9_ \-]{9}):(.*)$", body)
         if not match:
-            raise ParseError("invalid addresse in message")
+            break
 
         addresse, body = match[0]
 
