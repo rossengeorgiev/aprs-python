@@ -127,6 +127,31 @@ class IS(object):
         if self.sock is not None:
             self.sock.close()
 
+    def sendall(self, line):
+        """
+        Send a line, or multiple lines sperapted by '\\r\\n'
+        """
+        if not self._connected:
+            raise ConnectionError("not connected")
+
+        if isinstance(line, unicode):
+            line = line.encode('utf8')
+        elif not isinstance(line, str):
+            line = str(line)
+
+        if line == "":
+            return
+
+        line = line.rstrip("\r\n") + "\r\n"
+
+        try:
+            self.sock.setblocking(1)
+            self.sock.settimeout(5)
+            self.sock.sendall(line)
+        except socket.error as exp:
+            self.close()
+            raise ConnectionError(str(exp))
+
     def consumer(self, callback, blocking=True, immortal=False, raw=False):
         """
         When a position sentence is received, it will be passed to the callback function
