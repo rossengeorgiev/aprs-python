@@ -818,7 +818,17 @@ def _parse_normal(body):
             body
         ) = match[0]
 
-        # TODO: position ambiguity
+        # position ambiguity
+        posambiguity = lat_min.count(' ')
+        parsed.update({'posambiguity': posambiguity})
+
+        # we center the position inside the ambiguity box
+        if posambiguity >= 4:
+            lat_min = "30"
+            lon_min = "30"
+        else:
+            lat_min = lat_min.replace(' ', '5', 1)
+            lon_min = lon_min.replace(' ', '5', 1)
 
         # validate longitude and latitude
 
@@ -839,7 +849,6 @@ def _parse_normal(body):
         """
 
         # convert coordinates from DDMM.MM to decimal
-
         latitude = int(lat_deg) + (float(lat_min) / 60.0)
         longitude = int(lon_deg) + (float(lon_min) / 60.0)
 
