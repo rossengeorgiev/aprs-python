@@ -1,6 +1,11 @@
 CHANGES
 -------
 
+# v0.6.33
+
+- added ambiguity parsing for normal position reports
+  (fixes the unexpected exception)
+
 # v0.6.32
 
 - sendall() method to IS, allows sending of packets
