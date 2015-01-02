@@ -25,16 +25,19 @@ Currently the library provides facilities to:
 
 # handles reloading
 if 'IS' in globals():
-    modules = __import__('sys').modules
-    for m in modules.keys():
-        if m[:len(__name__)+1] == "%s." % __name__:
-            del modules[m]
+    MODULES = __import__('sys').modules
+    for M in MODULES.keys():
+        if M[:len(__name__)+1] == "%s." % __name__:
+            del MODULES[M]
+
+    del MODULES
+    del M
 
 from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-__version__ = "0.6.32"
+__version__ = "0.6.33"
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
