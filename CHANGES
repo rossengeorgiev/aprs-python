@@ -1,6 +1,10 @@
 CHANGES
 -------
 
+# v0.6.34
+
+- fixed timestamps being parsed incorrectly
+
 # v0.6.33
 
 - added ambiguity parsing for normal position reports
