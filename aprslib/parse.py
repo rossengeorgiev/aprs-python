@@ -316,11 +316,11 @@ def _parse_timestamp(body, packet_type=''):
             try:
                 # zulu hhmmss format
                 if form == 'h':
-                    timestamp = "%s%s%s%s" % (utc.year, utc.month, utc.day, ts)
+                    timestamp = "%d%02d02d%s" % (utc.year, utc.month, utc.day, ts)
                 # zulu ddhhmm format
                 # '/' local ddhhmm format
                 elif form in 'z/':
-                    timestamp = "%s%s%s%s" % (utc.year, utc.month, ts, utc.second)
+                    timestamp = "%d%02d%s%02d" % (utc.year, utc.month, ts, utc.second)
 
                 timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(timestamp.timetuple())
