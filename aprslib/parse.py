@@ -413,7 +413,7 @@ def _parse_comment_telemetry(text):
 
         if temp[6] != '':
             parsed['telemetry'].update({
-                'bits': "{0:08b}".format(temp[6] & 0xFF)
+                'bits': "{0:08b}".format(temp[6] & 0xFF)[::-1]
                 })
 
     return (text, parsed)
