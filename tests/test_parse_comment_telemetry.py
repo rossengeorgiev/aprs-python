@@ -34,7 +34,7 @@ class ParseCommentTelemetry(unittest.TestCase):
 
         # bits as str(11111111)
         if 'bits' in telem:
-            val = int(telem['bits'], 2)
+            val = int(telem['bits'][::-1], 2)
             text.append(base91.from_decimal(val, 2))
 
         text.append("|")
@@ -48,7 +48,7 @@ class ParseCommentTelemetry(unittest.TestCase):
             bits = None
 
             if len(vals) is 5 and randint(1, 10) > 5:
-                bits = "{:08b}".format(randint(0, 255))
+                bits = "{:08b}".format(randint(0, 255))[::-1]
 
             testData = self.genTelem(i, vals, bits)
 
