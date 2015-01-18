@@ -194,16 +194,18 @@ def parse(packet):
                 raise ParseError("invalid position report format", packet)
 
             # decode body
-            logger.debug("Attempting to parse as compressed position report")
             body, result = _parse_compressed(body)
             parsed.update(result)
 
-            if len(result) == 0:
-                logger.debug("Attempting to parse as normal position report")
+            if len(result) > 0:
+                logger.debug("Parsed as compressed position report")
+            else:
                 body, result = _parse_normal(body)
                 parsed.update(result)
 
-                if len(result) == 0:
+                if len(result) > 0:
+                    logger.debug("Parsed as normal position report")
+                else:
                     raise ParseError("invalid format")
 
             # decode comment
