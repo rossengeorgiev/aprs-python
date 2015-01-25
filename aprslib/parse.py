@@ -119,7 +119,6 @@ def parse(packet):
         # , - invalid/test format
         # - - unused
         # . - reserved
-        # ; - object report
         # < - station capabilities
         # ? - general query format
         # T - telemetry report
@@ -130,7 +129,7 @@ def parse(packet):
         # _ - positionless weather report
         # { - user defined
         # } - 3rd party traffic
-        if packet_type in '#$%)*,;<?T[_{}':
+        if packet_type in '#$%)*,<?T[_{}':
             raise UnknownFormat("format is not supported", packet)
 
         # STATUS PACKET
@@ -163,17 +162,31 @@ def parse(packet):
             parsed.update(result)
 
         # postion report (regular or compressed)
-        elif (packet_type in '!=/@' or
+        elif (packet_type in '!=/@;' or
               0 <= body.find('!') < 40):  # page 28 of spec (PDF)
 
-            if packet_type not in '!=/@':
+            if packet_type not in '!=/@;':
                 prefix, body = body.split('!', 1)
                 packet_type = '!'
 
-            parsed.update({"messagecapable": packet_type in '@='})
+            if packet_type == ';':
+                logger.debug("Attempting to parse object report format")
+                match = re.findall(r"^([ -~]{9})(\*|_)", body)
+                if match:
+                    name, flag = match[0]
+                    parsed.update({
+                        'object_name': name,
+                        'alive': flag == '*',
+                        })
+
+                    body = body[10:]
+                else:
+                    raise ParseError("invalid format")
+            else:
+                parsed.update({"messagecapable": packet_type in '@='})
 
             # decode timestamp
-            if packet_type in "/@":
+            if packet_type in "/@;":
                 body, result = _parse_timestamp(body, packet_type)
                 parsed.update(result)
 
@@ -181,21 +194,29 @@ def parse(packet):
                 raise ParseError("invalid position report format", packet)
 
             # decode body
-            logger.debug("Attempting to parse as compressed position report")
             body, result = _parse_compressed(body)
             parsed.update(result)
 
-            if len(result) == 0:
-                logger.debug("Attempting to parse as normal position report")
+            if len(result) > 0:
+                logger.debug("Parsed as compressed position report")
+            else:
                 body, result = _parse_normal(body)
                 parsed.update(result)
 
-                if len(result) == 0:
+                if len(result) > 0:
+                    logger.debug("Parsed as normal position report")
+                else:
                     raise ParseError("invalid format")
 
             # decode comment
             body, result = _parse_comment(body)
             parsed.update(result)
+
+            if packet_type == ';':
+                parsed.update({
+                    'object_format': parsed['format'],
+                    'format': 'object',
+                    })
 
     # capture ParseErrors and attach the packet
     except ParseError as exp:
@@ -316,7 +337,7 @@ def _parse_timestamp(body, packet_type=''):
             try:
                 # zulu hhmmss format
                 if form == 'h':
-                    timestamp = "%d%02d02d%s" % (utc.year, utc.month, utc.day, ts)
+                    timestamp = "%d%02d%02d%s" % (utc.year, utc.month, utc.day, ts)
                 # zulu ddhhmm format
                 # '/' local ddhhmm format
                 elif form in 'z/':

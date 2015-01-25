@@ -8,6 +8,7 @@ Parsing of packets is also possible, but the entire spec is not fully implemenet
 The following is supported:
 
 -  normal/compressed position reports
+-  objects
 -  mic-e position report
 -  messages (inc. telemetry, bulletins, etc)
 -  base91 comment telemetry extention
