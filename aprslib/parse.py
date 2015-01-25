@@ -337,7 +337,7 @@ def _parse_timestamp(body, packet_type=''):
             try:
                 # zulu hhmmss format
                 if form == 'h':
-                    timestamp = "%d%02d02d%s" % (utc.year, utc.month, utc.day, ts)
+                    timestamp = "%d%02d%02d%s" % (utc.year, utc.month, utc.day, ts)
                 # zulu ddhhmm format
                 # '/' local ddhhmm format
                 elif form in 'z/':
