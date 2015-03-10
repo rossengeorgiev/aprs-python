@@ -29,8 +29,8 @@ def to_decimal(text):
     Takes a base91 char string and returns decimal
     """
 
-    if not isinstance(text, str):
-        raise TypeError("expected str")
+    if not isinstance(text, basestring):
+        raise TypeError("expected str or unicode, %s given" % type(text))
 
     if findall(r"[\x00-\x20\x7c-\xff]", text):
         raise ValueError("invalid character in sequence")

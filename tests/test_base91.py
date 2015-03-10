@@ -64,12 +64,13 @@ class b_ToDecimal(unittest.TestCase):
         # 91**3 = "!!!
         # etc
         testData += [[91**i, '"' + '!'*i] for i in xrange(20)]
+        testData += [[91**i, u'"' + u'!'*i] for i in xrange(20)]
 
         for expected, n in testData:
             self.assertEqual(expected, base91.to_decimal(n))
 
     def test_invalid_input_type(self):
-        testData = [-1, 0, 5, unicode('a'), None, ['d']]
+        testData = [-1, 0, 5, None, ['d']]
 
         for n in testData:
             self.assertRaises(TypeError, base91.to_decimal, n)

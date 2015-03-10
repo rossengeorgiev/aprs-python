@@ -24,6 +24,16 @@ import math
 import logging
 from datetime import datetime
 
+try:
+    import chardet
+except ImportError:
+    # create fake chardet
+
+    class chardet:
+        @staticmethod
+        def detect(x):
+            return {'confidence': 0.0, 'encoding': 'windows-1252'}
+
 from .exceptions import (UnknownFormat, ParseError)
 from . import base91
 
@@ -68,6 +78,17 @@ def parse(packet):
       * status message
     """
 
+    # attempt to detect encoding
+    try:
+        packet = packet.decode('utf-8')
+    except UnicodeDecodeError:
+        res = chardet.detect(packet)
+
+        if res['confidence'] > 0.7:
+            packet = packet.decode(res['encoding'])
+        else:
+            packet = packet.decode('latin-1')
+
     packet = packet.rstrip("\r\n")
     logger.debug("Parsing: %s", packet)
 
@@ -93,7 +114,7 @@ def parse(packet):
 
     try:
         parsed.update(_parse_header(head))
-    except ParseError, msg:
+    except ParseError as msg:
         raise ParseError(str(msg), packet)
 
     packet_type = body[0]
@@ -331,7 +352,7 @@ def _parse_timestamp(body, packet_type=''):
 
         if packet_type == '>' and form != 'z':
             pass
-        if form in "hz/":
+        else:
             body = body[7:]
 
             try:
@@ -341,7 +362,9 @@ def _parse_timestamp(body, packet_type=''):
                 # zulu ddhhmm format
                 # '/' local ddhhmm format
                 elif form in 'z/':
-                    timestamp = "%d%02d%s%02d" % (utc.year, utc.month, ts, utc.second)
+                    timestamp = "%d%02d%s%02d" % (utc.year, utc.month, ts, 0)
+                else:
+                    timestamp = "19700101000000"
 
                 timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(timestamp.timetuple())
@@ -477,7 +500,7 @@ def _parse_mice(dstcall, body):
         elif ord(i) > 76:  # P-Y
             tmpdstcall += chr(ord(i) - 32)
         elif ord(i) > 57:  # A-J
-            tmpdstcall += chr(ord(i) - 16)
+            tmpdstcall += chr(ord(i) - 17)
         else:  # 0-9
             tmpdstcall += i
 
