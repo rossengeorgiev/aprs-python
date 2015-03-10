@@ -93,7 +93,7 @@ def parse(packet):
 
     try:
         parsed.update(_parse_header(head))
-    except ParseError, msg:
+    except ParseError as msg:
         raise ParseError(str(msg), packet)
 
     packet_type = body[0]
