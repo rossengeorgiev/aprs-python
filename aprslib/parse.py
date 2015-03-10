@@ -477,7 +477,7 @@ def _parse_mice(dstcall, body):
         elif ord(i) > 76:  # P-Y
             tmpdstcall += chr(ord(i) - 32)
         elif ord(i) > 57:  # A-J
-            tmpdstcall += chr(ord(i) - 16)
+            tmpdstcall += chr(ord(i) - 17)
         else:  # 0-9
             tmpdstcall += i
 
