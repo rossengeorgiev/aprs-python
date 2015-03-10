@@ -4,16 +4,23 @@ APRS library for Python
 |Build Status| |Coverage Status|
 
 A tiny library for dealing with APRS. It can be used to connect and listen to the APRS-IS feed as well as upload.
-Parsing of packets is also possible, but the entire spec is not fully implemeneted yet.
+Parsing of packets is also possible, but the entire spec is not fully implemented yet.
 The following is supported:
 
 -  normal/compressed position reports
 -  objects
 -  mic-e position report
 -  messages (inc. telemetry, bulletins, etc)
--  base91 comment telemetry extention
--  altitude extention
+-  base91 comment telemetry extension
+-  altitude extension
 -  beacons
+
+Packets can often contain characters outside of 7-bit ASCII.
+``aprslib.parse()`` will attempt to guess the charset and return ``unicode`` strings using these steps and in that order:
+
+1. Attempt to decode string as ``utf-8``
+2. Attempt to guess the charset using ``chardet`` module (if installed), decode if confidence factor is sufficient
+3. Finally, decode as ``latin-1``
 
 Install
 -----------
@@ -116,7 +123,7 @@ Here is a simple example:
     DEBUG:aprslib.parse:Parsed ok.
     ...
 
-Uploading packets to APRS-IS is posible through the ``sendall()`` method in ``IS``.
+Uploading packets to APRS-IS is possible through the ``sendall()`` method in ``IS``.
 The method assumes a single line/packet per call. The parameters may end with ``\r\n``, but it's not required.
 
 .. code:: python

@@ -24,6 +24,16 @@ import math
 import logging
 from datetime import datetime
 
+try:
+    import chardet
+except ImportError:
+    # create fake chardet
+
+    class chardet:
+        @staticmethod
+        def detect(x):
+            return {'confidence': 0.0, 'encoding': 'windows-1252'}
+
 from .exceptions import (UnknownFormat, ParseError)
 from . import base91
 
@@ -67,6 +77,17 @@ def parse(packet):
       * messages including bulletins, announcements and telemetry
       * status message
     """
+
+    # attempt to detect encoding
+    try:
+        packet = packet.decode('utf-8')
+    except UnicodeDecodeError:
+        res = chardet.detect(packet)
+
+        if res['confidence'] > 0.7:
+            packet = packet.decode(res['encoding'])
+        else:
+            packet = packet.decode('latin-1')
 
     packet = packet.rstrip("\r\n")
     logger.debug("Parsing: %s", packet)
