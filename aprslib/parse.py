@@ -331,7 +331,7 @@ def _parse_timestamp(body, packet_type=''):
 
         if packet_type == '>' and form != 'z':
             pass
-        if form in "hz/":
+        else:
             body = body[7:]
 
             try:
@@ -341,7 +341,9 @@ def _parse_timestamp(body, packet_type=''):
                 # zulu ddhhmm format
                 # '/' local ddhhmm format
                 elif form in 'z/':
-                    timestamp = "%d%02d%s%02d" % (utc.year, utc.month, ts, utc.second)
+                    timestamp = "%d%02d%s%02d" % (utc.year, utc.month, ts, 0)
+                else:
+                    timestamp = "19700101000000"
 
                 timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(timestamp.timetuple())
