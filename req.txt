@@ -2,3 +2,4 @@ pylint
 nose
 coverage
 mox
+chardet

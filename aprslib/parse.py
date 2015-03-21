@@ -79,15 +79,16 @@ def parse(packet):
     """
 
     # attempt to detect encoding
-    try:
-        packet = packet.decode('utf-8')
-    except UnicodeDecodeError:
-        res = chardet.detect(packet)
+    if isinstance(packet, str):
+        try:
+            packet = packet.decode('utf-8')
+        except UnicodeDecodeError:
+            res = chardet.detect(packet)
 
-        if res['confidence'] > 0.7:
-            packet = packet.decode(res['encoding'])
-        else:
-            packet = packet.decode('latin-1')
+            if res['confidence'] > 0.7:
+                packet = packet.decode(res['encoding'])
+            else:
+                packet = packet.decode('latin-1')
 
     packet = packet.rstrip("\r\n")
     logger.debug("Parsing: %s", packet)
