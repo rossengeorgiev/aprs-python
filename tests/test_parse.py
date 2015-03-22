@@ -22,13 +22,13 @@ class ParseTestCase(unittest.TestCase):
         self.assertIsInstance(result['status'], unicode)
         self.assertEqual(result['status'], u"status\xb0")
 
-        # str with unicode
+        # str with utf8
         result = parse("A>B:>статус")
 
         self.assertIsInstance(result['status'], unicode)
         self.assertEqual(result['status'], u"статус")
 
-        # uncide input
+        # unicode input
         result = parse(u"A>B:>статус")
 
         self.assertIsInstance(result['status'], unicode)
