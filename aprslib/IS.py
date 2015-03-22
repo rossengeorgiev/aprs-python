@@ -25,7 +25,7 @@ import logging
 import sys
 
 from . import __version__
-from .parse import parse
+from .parsing import parse
 from .exceptions import (
     GenericError,
     ConnectionDrop,

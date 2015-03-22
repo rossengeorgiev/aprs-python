@@ -34,8 +34,8 @@ except ImportError:
         def detect(x):
             return {'confidence': 0.0, 'encoding': 'windows-1252'}
 
-from .exceptions import (UnknownFormat, ParseError)
-from . import base91
+from exceptions import (UnknownFormat, ParseError)
+import base91
 
 __all__ = ['parse']
 
@@ -99,7 +99,7 @@ def parse(packet):
     # typical packet format
     #
     #  CALL1>CALL2,CALL3,CALL4:>longtext......
-    # |--------header--------|-----body-------|
+    # |--------header---------|-----body------|
     #
     try:
         (head, body) = packet.split(':', 1)

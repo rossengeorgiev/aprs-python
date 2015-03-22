@@ -2,8 +2,8 @@ import unittest
 import string
 from random import randint, randrange, sample
 
-from aprslib.parse import _parse_header
-from aprslib.parse import _validate_callsign
+from aprslib.parsing import _parse_header
+from aprslib.parsing import _validate_callsign
 from aprslib.exceptions import ParseError
 
 

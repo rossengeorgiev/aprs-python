@@ -42,7 +42,7 @@ __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
 from .exceptions import *
-from .parse import parse
+from .parsing import parse
 from .passcode import passcode
 
 from .IS import IS
