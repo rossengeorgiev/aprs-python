@@ -52,12 +52,18 @@ class ParseTestCase(unittest.TestCase):
         try:
             parse("A>B:>")
         except:
-            self.fail("empty status packed shouldn't raise exception")
+            self.fail("empty status packet shouldn't raise exception")
 
     def test_unsupported_formats_raising(self):
         with self.assertRaises(UnknownFormat):
             for packet_type in '#$%)*,<?T[_{}':
-                parse("A>B:%saaa" % packet_type)
+                packet = "A>B:%saaa" % packet_type
+
+                try:
+                    parse(packet)
+                except UnknownFormat as exp:
+                    self.assertEqual(exp.packet, packet)
+                    raise
 
 
 class ParseBranchesTestCase(unittest.TestCase):
@@ -81,15 +87,15 @@ class ParseBranchesTestCase(unittest.TestCase):
             'path': [],
             'format': 'status'
         }
-        result =  parse("A>B:>test")
+        result = parse("A>B:>test")
 
         self.assertEqual(result, expected)
         self.m.VerifyAll()
 
     def test_mice_format_branch(self):
         self.m.StubOutWithMock(parsing, "_parse_mice")
-        parsing._parse_mice("B","test").AndReturn(('', {'format':''}))
-        parsing._parse_mice("D","test").AndReturn(('', {'format':''}))
+        parsing._parse_mice("B", "test").AndReturn(('', {'format': ''}))
+        parsing._parse_mice("D", "test").AndReturn(('', {'format': ''}))
         self.m.ReplayAll()
 
         parse("A>B:`test")
@@ -99,7 +105,7 @@ class ParseBranchesTestCase(unittest.TestCase):
 
     def test_message_format_branch(self):
         self.m.StubOutWithMock(parsing, "_parse_message")
-        parsing._parse_message("test").AndReturn(('', {'format':''}))
+        parsing._parse_message("test").AndReturn(('', {'format': ''}))
         self.m.ReplayAll()
 
         parse("A>B::test")
