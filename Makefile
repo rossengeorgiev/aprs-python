@@ -11,6 +11,8 @@ Available commands:
 
 endef
 
+verbosity=1
+
 export HELPBODY
 help:
 	@echo "$$HELPBODY"
@@ -20,7 +22,7 @@ init:
 
 test:
 	rm -f aprslib/*.pyc
-	nosetests --verbosity 2 --with-coverage --cover-package=aprslib
+	nosetests --verbosity $(verbosity) --with-coverage --cover-package=aprslib
 
 pylint:
 	pylint -r n -f colorized aprslib || true
