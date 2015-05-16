@@ -22,6 +22,7 @@ Provides facilities for covertion from/to base91
 __all__ = ['to_decimal', 'from_decimal']
 from math import log
 from re import findall
+from . import string_type, int_type
 
 
 def to_decimal(text):
@@ -29,7 +30,7 @@ def to_decimal(text):
     Takes a base91 char string and returns decimal
     """
 
-    if not isinstance(text, basestring):
+    if not isinstance(text, string_type):
         raise TypeError("expected str or unicode, %s given" % type(text))
 
     if findall(r"[\x00-\x20\x7c-\xff]", text):
@@ -50,13 +51,17 @@ def from_decimal(number, padding=1):
     """
     text = []
 
-    if not isinstance(number, (int, long)) is not int or number < 0:
-        raise ValueError("non-positive integer error")
-    elif not isinstance(number, (int, long)) or padding < 1:
-        raise ValueError("padding must be integer and >0")
+    if not isinstance(number, int_type):
+        raise TypeError("Expected number to be int, got %s", type(number))
+    elif not isinstance(padding, int_type):
+        raise TypeError("Expected padding to be int, got %s", type(number))
+    elif number < 0:
+        raise ValueError("Expected number to be positive integer")
+    elif padding < 1:
+        raise ValueError("Expected padding to be >0")
     elif number > 0:
         for divisor in [91**e for e in reversed(range(int(log(number) / log(91)) + 1))]:
-            quotient = number / divisor
+            quotient = number // divisor
             number = number % divisor
             text.append(chr(33 + quotient))
 

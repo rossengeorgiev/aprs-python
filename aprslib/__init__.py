@@ -23,6 +23,19 @@ Currently the library provides facilities to:
     - Connect and listen to an aprs-is packet feed
 """
 
+# Py2 & Py3 compability
+import sys
+if sys.version_info[0] >= 3:
+    is_py3 = True
+    string_type = (str, )
+    string_type_parse = string_type + (bytes, )
+    int_type = int
+else:
+    is_py3 = False
+    string_type = (str, unicode)
+    string_type_parse = string_type
+    int_type = (int, long)
+
 # handles reloading
 if 'IS' in globals():
     MODULES = __import__('sys').modules

@@ -35,7 +35,7 @@ except ImportError:
             return {'confidence': 0.0, 'encoding': 'windows-1252'}
 
 from .exceptions import (UnknownFormat, ParseError)
-from . import base91
+from . import base91, string_type_parse, is_py3
 
 __all__ = ['parse']
 
@@ -78,12 +78,18 @@ def parse(packet):
       * status message
     """
 
+    if not isinstance(packet, string_type_parse):
+        raise TypeError("Epected packet to be str/unicode/bytes, got %s", type(packet))
+
     # attempt to detect encoding
-    if isinstance(packet, str):
+    if isinstance(packet, bytes if is_py3 else str):
         try:
             packet = packet.decode('utf-8')
         except UnicodeDecodeError:
-            res = chardet.detect(packet)
+            if is_py3:
+                res = chardet.detect(packet.split(b':', 1)[-1])
+            else:
+                res = chardet.detect(packet.split(':', 1)[-1])
 
             if res['confidence'] > 0.7:
                 packet = packet.decode(res['encoding'])

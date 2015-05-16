@@ -1,10 +1,10 @@
 import unittest
-import mox
-import aprslib
-import logging
 import socket
 import sys
 import os
+
+import aprslib
+from mox3 import mox
 
 
 class TC_IS(unittest.TestCase):
@@ -42,7 +42,7 @@ class TC_IS(unittest.TestCase):
 
     def test_socket_readlines(self):
         fdr, fdw = os.pipe()
-        f = os.fdopen(fdw,'w')
+        f = os.fdopen(fdw, 'w')
         f.write("something")
         f.close()
 
@@ -57,15 +57,15 @@ class TC_IS(unittest.TestCase):
         # part 3 - nothing to read
         self.ais.sock.setblocking(0)
         self.ais.sock.fileno().AndReturn(fdr)
-        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(socket.error(""
-                "Resource temporarily unavailable"))
+        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(
+            socket.error("Resource temporarily unavailable"))
         # part 4 - yield 3 lines (blocking False)
         self.ais.sock.setblocking(0)
         self.ais.sock.fileno().AndReturn(fdr)
         self.ais.sock.recv(mox.IgnoreArg()).AndReturn("a\r\n"*3)
         self.ais.sock.fileno().AndReturn(fdr)
-        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(socket.error(""
-                "Resource temporarily unavailable"))
+        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(
+            socket.error("Resource temporarily unavailable"))
         # part 5 - yield 3 lines 2 times (blocking True)
         self.ais.sock.setblocking(0)
         self.ais.sock.fileno().AndReturn(fdr)
@@ -76,15 +76,17 @@ class TC_IS(unittest.TestCase):
         self.ais.sock.recv(mox.IgnoreArg()).AndRaise(StopIteration)
         mox.Replay(self.ais.sock)
 
+        next_method = '__next__' if sys.version_info[0] >= 3 else 'next'
+
         # part 1
         with self.assertRaises(aprslib.exceptions.ConnectionDrop):
-            self.ais._socket_readlines().next()
+            getattr(self.ais._socket_readlines(), next_method)()
         # part 2
         with self.assertRaises(aprslib.exceptions.ConnectionDrop):
-            self.ais._socket_readlines().next()
+            getattr(self.ais._socket_readlines(), next_method)()
         # part 3
         with self.assertRaises(StopIteration):
-            self.ais._socket_readlines().next()
+            getattr(self.ais._socket_readlines(), next_method)()
         # part 4
         for line in self.ais._socket_readlines():
             self.assertEqual(line, 'a')
@@ -260,47 +262,55 @@ class TC_IS(unittest.TestCase):
 
         self.m.VerifyAll()
 
-    def test_sendall(self):
+    def test_sendall_type_exception(self):
+        for testType in [5, 0.5, dict, list]:
+            with self.assertRaises(TypeError):
+                self.ais.sendall(testType)
+
+    def test_sendall_not_connected(self):
+        self.ais._connected = False
+        with self.assertRaises(aprslib.ConnectionError):
+            self.ais.sendall("test")
+
+    def test_sendall_socketerror(self):
         self.ais.sock = mox.MockAnything()
         self.m.StubOutWithMock(self.ais, "close")
 
-        # part 1 not connected
-        #
-        # part 2 socket.error
+        # setup
         self.ais.sock.setblocking(mox.IgnoreArg())
         self.ais.sock.settimeout(mox.IgnoreArg())
         self.ais.sock.sendall(mox.IgnoreArg()).AndRaise(socket.error)
         self.ais.close()
-        # part 3 empty input
-        #
 
         mox.Replay(self.ais.sock)
         self.m.ReplayAll()
 
-        # part 1
-        self.ais._connected = False
-        with self.assertRaises(aprslib.ConnectionError):
-            self.ais.sendall("test")
-        # part 2
+        # test
         self.ais._connected = True
         with self.assertRaises(aprslib.ConnectionError):
             self.ais.sendall("test")
 
-        # part 3
-        self.ais._connected = True
-        self.ais.sendall("")
-
-        # verify so far
+        # verify
         mox.Verify(self.ais.sock)
         self.m.VerifyAll()
 
+    def test_sendall_empty_input(self):
+        self.ais._connected = True
+        self.ais.sendall("")
+
+    def test_sendall_passing_to_socket(self):
+        self.ais.sock = mox.MockAnything()
+        self.m.StubOutWithMock(self.ais, "close")
+
         # rest
+        _unicode = str if sys.version_info[0] >= 3 else unicode
+
         self.ais._connected = True
         for line in [
-                "test",      # no \r\n
-                "test\r\n",  # with \r\n
-                u"test",     # unicode
-                5,           # number or anything with __str__
+                "test",
+                "test\r\n",
+                _unicode("test"),
+                _unicode("test\r\n"),
                 ]:
             # setup
             self.ais.sock = mox.MockAnything()
@@ -380,7 +390,7 @@ class TC_IS_consumer(unittest.TestCase):
 
         self.m.VerifyAll()
 
-    def test_consumer_exptions(self):
+    def test_consumer_exceptions(self):
         self.ais._socket_readlines(False).AndRaise(SystemExit)
         self.ais._socket_readlines(False).AndRaise(KeyboardInterrupt)
         self.ais._socket_readlines(False).AndRaise(Exception("random"))

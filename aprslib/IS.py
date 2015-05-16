@@ -24,7 +24,7 @@ import time
 import logging
 import sys
 
-from . import __version__
+from . import __version__, string_type
 from .parsing import parse
 from .exceptions import (
     GenericError,
@@ -131,13 +131,10 @@ class IS(object):
         """
         Send a line, or multiple lines sperapted by '\\r\\n'
         """
+        if not isinstance(line, string_type):
+            raise TypeError("Expected line to be str, got %s", type(line))
         if not self._connected:
             raise ConnectionError("not connected")
-
-        if isinstance(line, unicode):
-            line = line.encode('utf8')
-        elif not isinstance(line, str):
-            line = str(line)
 
         if line == "":
             return
@@ -324,7 +321,7 @@ class IS(object):
                 if not short_buf:
                     raise ConnectionDrop("connection dropped")
             except socket.error as e:
-                if "Resource temporarily unavailable" in e:
+                if "Resource temporarily unavailable" in str(e):
                     if not blocking:
                         if len(self.buf) == 0:
                             break

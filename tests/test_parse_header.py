@@ -10,10 +10,10 @@ from aprslib.exceptions import ParseError
 class ValidateCallsign(unittest.TestCase):
 
     def test_valid_input(self):
-        chars = string.letters.upper() + string.digits
+        chars = string.ascii_letters.upper() + string.digits
 
         def random_valid_callsigns():
-            for x in xrange(0, 500):
+            for x in range(0, 500):
                 call = "".join(sample(chars, randrange(1, 6)))
 
                 if bool(randint(0, 1)):
@@ -118,7 +118,7 @@ class ParseHeader(unittest.TestCase):
         for head in testData:
             try:
                 _parse_header(head)
-            except ParseError, msg:
+            except ParseError as msg:
                 self.fail("{0}('{1}') PraseError, {2}"
                           .format(_parse_header.__name__, head, msg))
 

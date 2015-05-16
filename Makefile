@@ -21,7 +21,7 @@ init:
 	pip install -r req.txt
 
 test:
-	rm -f aprslib/*.pyc
+	rm -f .coverage aprslib/*.pyc
 	nosetests --verbosity $(verbosity) --with-coverage --cover-package=aprslib
 
 pylint:

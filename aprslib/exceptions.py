@@ -35,6 +35,7 @@ class GenericError(Exception):
     """
     def __init__(self, message):
         super(GenericError, self).__init__(message)
+        self.message = message
 
 
 class UnknownFormat(GenericError):

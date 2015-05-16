@@ -1,4 +1,3 @@
-pylint
 nose
 coverage
-mox
+mox3

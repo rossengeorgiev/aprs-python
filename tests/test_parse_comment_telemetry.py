@@ -42,8 +42,8 @@ class ParseCommentTelemetry(unittest.TestCase):
         return "".join(text)
 
     def test_random_valid_telemetry(self):
-        for i in xrange(100):
-            vals = [randint(0, self.b91max) for x in xrange(randint(1, 5))]
+        for i in range(100):
+            vals = [randint(0, self.b91max) for x in range(randint(1, 5))]
 
             bits = None
 
