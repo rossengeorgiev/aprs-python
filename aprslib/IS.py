@@ -24,7 +24,7 @@ import time
 import logging
 import sys
 
-from . import __version__, string_type
+from . import __version__, string_type, is_py3
 from .parsing import parse
 from .exceptions import (
     GenericError,
@@ -67,7 +67,15 @@ class IS(object):
         self.filter = ""  # default filter, everything
 
         self._connected = False
-        self.buf = ''
+        if is_py3:
+            self.buf = b''
+        else:
+            self.buf = ''
+
+    def _sendall(self, text):
+        if is_py3:
+            text = text.encode('utf-8')
+        self.sock.sendall(text)
 
     def set_filter(self, filter_text):
         """
@@ -78,7 +86,7 @@ class IS(object):
         self.logger.info("Setting filter to: %s", self.filter)
 
         if self._connected:
-            self.sock.sendall("#filter %s\r\n" % self.filter)
+            self._sendall("#filter %s\r\n" % self.filter)
 
     def set_login(self, callsign, passwd):
         """
@@ -122,7 +130,10 @@ class IS(object):
         """
 
         self._connected = False
-        self.buf = ''
+        if is_py3:
+            self.buf = b''
+        else:
+            self.buf = ''
 
         if self.sock is not None:
             self.sock.close()
@@ -144,7 +155,7 @@ class IS(object):
         try:
             self.sock.setblocking(1)
             self.sock.settimeout(5)
-            self.sock.sendall(line)
+            self._sendall(line)
         except socket.error as exp:
             self.close()
             raise ConnectionError(str(exp))
@@ -239,6 +250,8 @@ class IS(object):
                 # pylint: enable=E1103
 
             banner = self.sock.recv(512)
+            if is_py3:
+                banner = banner.decode('latin-1')
 
             if banner[0] == "#":
                 self.logger.debug("Banner: %s", banner.rstrip())
@@ -273,9 +286,12 @@ class IS(object):
         self.logger.info("Sending login information")
 
         try:
-            self.sock.sendall(login_str)
+            self._sendall(login_str)
             self.sock.settimeout(5)
-            test = self.sock.recv(len(login_str) + 100).rstrip()
+            test = self.sock.recv(len(login_str) + 100)
+            if is_py3:
+                test = test.decode('latin-1')
+            test = test.rstrip()
 
             self.logger.debug("Server: %s", test)
 
@@ -310,7 +326,12 @@ class IS(object):
             raise ConnectionDrop("connection dropped")
 
         while True:
-            short_buf = ''
+            if is_py3:
+                short_buf = b''
+                newline = b'\r\n'
+            else:
+                short_buf = ''
+                newline = '\r\n'
 
             select.select([self.sock], [], [], None if blocking else 0)
 
@@ -328,7 +349,7 @@ class IS(object):
 
             self.buf += short_buf
 
-            while "\r\n" in self.buf:
-                line, self.buf = self.buf.split("\r\n", 1)
+            while newline in self.buf:
+                line, self.buf = self.buf.split(newline, 1)
 
                 yield line
