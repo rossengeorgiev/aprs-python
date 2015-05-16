@@ -1,4 +1,4 @@
-import unittest
+import unittest2 as unittest
 
 from aprslib.parsing import _parse_comment_telemetry
 from aprslib import base91

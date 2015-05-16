@@ -1,4 +1,4 @@
-import unittest
+import unittest2 as unittest
 import string
 from random import randint, randrange, sample
 
