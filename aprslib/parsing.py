@@ -82,14 +82,11 @@ def parse(packet):
         raise TypeError("Epected packet to be str/unicode/bytes, got %s", type(packet))
 
     # attempt to detect encoding
-    if isinstance(packet, bytes if is_py3 else str):
+    if isinstance(packet, bytes):
         try:
             packet = packet.decode('utf-8')
         except UnicodeDecodeError:
-            if is_py3:
-                res = chardet.detect(packet.split(b':', 1)[-1])
-            else:
-                res = chardet.detect(packet.split(':', 1)[-1])
+            res = chardet.detect(packet.split(b':', 1)[-1])
 
             if res['confidence'] > 0.7:
                 packet = packet.decode(res['encoding'])

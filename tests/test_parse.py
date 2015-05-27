@@ -9,39 +9,39 @@ from aprslib import parsing
 from aprslib.exceptions import ParseError, UnknownFormat
 
 
+def _u(text, c='utf8'):
+    if sys.version_info[0] >= 3:
+        return text
+    else:
+        return text.decode(c)
+
+
 class ParseTestCase(unittest.TestCase):
     def test_unicode(self):
-        def _u(text, c='utf8'):
-            if sys.version_info[0] >= 3:
-                return text
-            else:
-                return text.decode(c)
-
-
         _unicode = str if sys.version_info[0] >= 3 else unicode
 
         # 7bit ascii
         result = parse("A>B:>status")
 
-        self.assertIsInstance(result['status'],_unicode)
+        self.assertIsInstance(result['status'], _unicode)
         self.assertEqual(result['status'], _u("status"))
 
         # string with degree sign
         result = parse("A>B:>status\xb0")
 
-        self.assertIsInstance(result['status'],_unicode)
-        self.assertEqual(result['status'], _u("status\xb0",'latin-1'))
+        self.assertIsInstance(result['status'], _unicode)
+        self.assertEqual(result['status'], _u("status\xb0", 'latin-1'))
 
         # str with utf8
         result = parse("A>B:>статус")
 
-        self.assertIsInstance(result['status'],_unicode)
+        self.assertIsInstance(result['status'], _unicode)
         self.assertEqual(result['status'], _u("статус"))
 
         # unicode input
         result = parse(_u("A>B:>статус"))
 
-        self.assertIsInstance(result['status'],_unicode)
+        self.assertIsInstance(result['status'], _unicode)
         self.assertEqual(result['status'], _u("статус"))
 
     def test_empty_packet(self):

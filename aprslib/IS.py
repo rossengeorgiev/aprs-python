@@ -67,10 +67,7 @@ class IS(object):
         self.filter = ""  # default filter, everything
 
         self._connected = False
-        if is_py3:
-            self.buf = b''
-        else:
-            self.buf = ''
+        self.buf = b''
 
     def _sendall(self, text):
         if is_py3:
@@ -130,10 +127,7 @@ class IS(object):
         """
 
         self._connected = False
-        if is_py3:
-            self.buf = b''
-        else:
-            self.buf = ''
+        self.buf = b''
 
         if self.sock is not None:
             self.sock.close()
@@ -326,12 +320,8 @@ class IS(object):
             raise ConnectionDrop("connection dropped")
 
         while True:
-            if is_py3:
-                short_buf = b''
-                newline = b'\r\n'
-            else:
-                short_buf = ''
-                newline = '\r\n'
+            short_buf = b''
+            newline = b'\r\n'
 
             select.select([self.sock], [], [], None if blocking else 0)
 
