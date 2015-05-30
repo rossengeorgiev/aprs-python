@@ -868,6 +868,10 @@ def _parse_normal(body):
 
         # position ambiguity
         posambiguity = lat_min.count(' ')
+
+        if posambiguity != lon_min.count(' '):
+            raise ParseError("latitude and longitude ambiguity mismatch")
+
         parsed.update({'posambiguity': posambiguity})
 
         # we center the position inside the ambiguity box
