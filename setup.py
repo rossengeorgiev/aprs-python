@@ -31,5 +31,5 @@ setup(
     keywords='aprs aprslib parse parsing aprs-is library base91',
     packages=['aprslib'],
     install_requires=[],
-    zip_safe=False,
+    zip_safe=True,
 )
