@@ -50,7 +50,7 @@ from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-__version__ = "0.6.37"
+__version__ = "0.6.38"
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
