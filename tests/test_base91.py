@@ -1,4 +1,5 @@
-import unittest
+import unittest2 as unittest
+import sys
 
 from aprslib import base91
 
@@ -16,22 +17,28 @@ class a_FromDecimal(unittest.TestCase):
         # 91**2 = "!!
         # 91**3 = "!!!
         # etc
-        testData += [[91**i, '"' + '!'*i] for i in xrange(20)]
+        testData += [[91**i, '"' + '!'*i] for i in range(20)]
 
         for n, expected in testData:
             self.assertEqual(expected, base91.from_decimal(n))
 
-    def test_invalid_input_type(self):
-        testData = ['0', '1', 1.0, None, [0]]
+    def test_invalid_number_type(self):
+        testData = ['0', '1', 1.0, None, [0], dict]
 
         for n in testData:
-            self.assertRaises(ValueError, base91.from_decimal, n)
+            self.assertRaises(TypeError, base91.from_decimal, n)
 
-    def test_invalid_input_range(self):
+    def test_invalid_number_range(self):
         testData = [-10000, -5, -1]
 
         for n in testData:
             self.assertRaises(ValueError, base91.from_decimal, n)
+
+    def test_invalid_padding_type(self):
+        testData = ['0', '1', 1.0, None, [0], dict]
+
+        for n in testData:
+            self.assertRaises(TypeError, base91.from_decimal, 0, padding=n)
 
     def test_valid_padding(self):
         testData = [1, 2, 5, 10, 100]
@@ -63,8 +70,10 @@ class b_ToDecimal(unittest.TestCase):
         # 91**2 = "!!
         # 91**3 = "!!!
         # etc
-        testData += [[91**i, '"' + '!'*i] for i in xrange(20)]
-        testData += [[91**i, u'"' + u'!'*i] for i in xrange(20)]
+        testData += [[91**i, '"' + '!'*i] for i in range(20)]
+
+        if sys.version_info[0] < 3:
+            testData += [[91**i, unicode('"') + unicode('!')*i] for i in range(20)]
 
         for expected, n in testData:
             self.assertEqual(expected, base91.to_decimal(n))
@@ -77,7 +86,7 @@ class b_ToDecimal(unittest.TestCase):
 
     def test_invalid_input(self):
         # test for every value outside of the accepted range
-        testData = [chr(i) for i in range(ord('!'))+range(ord('{')+1, 256)]
+        testData = [chr(i) for i in list(range(ord('!')))+list(range(ord('{')+1, 256))]
 
         # same as above, except each value is prefix with a valid char
         testData += ['!'+c for c in testData]
@@ -88,14 +97,14 @@ class b_ToDecimal(unittest.TestCase):
 
 class c_Both(unittest.TestCase):
     def test_from_decimal_to_decimal(self):
-        for number in xrange(91**2 + 5):
+        for number in range(91**2 + 5):
             text = base91.from_decimal(number)
             result = base91.to_decimal(text)
 
             self.assertEqual(result, number)
 
     def test_stability(self):
-        for number in xrange(50):
+        for number in range(50):
             largeN = 91 ** number
             text = base91.from_decimal(largeN)
             result = base91.to_decimal(text)

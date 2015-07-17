@@ -23,6 +23,19 @@ Currently the library provides facilities to:
     - Connect and listen to an aprs-is packet feed
 """
 
+# Py2 & Py3 compability
+import sys
+if sys.version_info[0] >= 3:
+    is_py3 = True
+    string_type = (str, )
+    string_type_parse = string_type + (bytes, )
+    int_type = int
+else:
+    is_py3 = False
+    string_type = (str, unicode)
+    string_type_parse = string_type
+    int_type = (int, long)
+
 # handles reloading
 if 'IS' in globals():
     MODULES = __import__('sys').modules
@@ -37,12 +50,12 @@ from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-__version__ = "0.6.37"
+__version__ = "0.6.38"
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
 from .exceptions import *
-from .parse import parse
+from .parsing import parse
 from .passcode import passcode
 
 from .IS import IS

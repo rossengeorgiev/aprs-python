@@ -17,7 +17,7 @@ setup(
     long_description=long_description,
     url='https://github.com/rossengeorgiev/aprs-python',
     author='Rossen Georgiev',
-    author_email='zx.devel@gmail.com',
+    author_email='hello@rgp.io',
     license='GPLv2',
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -31,5 +31,5 @@ setup(
     keywords='aprs aprslib parse parsing aprs-is library base91',
     packages=['aprslib'],
     install_requires=[],
-    zip_safe=False,
+    zip_safe=True,
 )

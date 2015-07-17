@@ -35,7 +35,7 @@ except ImportError:
             return {'confidence': 0.0, 'encoding': 'windows-1252'}
 
 from .exceptions import (UnknownFormat, ParseError)
-from . import base91
+from . import base91, string_type_parse, is_py3
 
 __all__ = ['parse']
 
@@ -78,16 +78,20 @@ def parse(packet):
       * status message
     """
 
-    # attempt to detect encoding
-    try:
-        packet = packet.decode('utf-8')
-    except UnicodeDecodeError:
-        res = chardet.detect(packet)
+    if not isinstance(packet, string_type_parse):
+        raise TypeError("Epected packet to be str/unicode/bytes, got %s", type(packet))
 
-        if res['confidence'] > 0.7:
-            packet = packet.decode(res['encoding'])
-        else:
-            packet = packet.decode('latin-1')
+    # attempt to detect encoding
+    if isinstance(packet, bytes):
+        try:
+            packet = packet.decode('utf-8')
+        except UnicodeDecodeError:
+            res = chardet.detect(packet.split(b':', 1)[-1])
+
+            if res['confidence'] > 0.7:
+                packet = packet.decode(res['encoding'])
+            else:
+                packet = packet.decode('latin-1')
 
     packet = packet.rstrip("\r\n")
     logger.debug("Parsing: %s", packet)
@@ -98,7 +102,7 @@ def parse(packet):
     # typical packet format
     #
     #  CALL1>CALL2,CALL3,CALL4:>longtext......
-    # |--------header--------|-----body-------|
+    # |--------header---------|-----body------|
     #
     try:
         (head, body) = packet.split(':', 1)
@@ -864,6 +868,10 @@ def _parse_normal(body):
 
         # position ambiguity
         posambiguity = lat_min.count(' ')
+
+        if posambiguity != lon_min.count(' '):
+            raise ParseError("latitude and longitude ambiguity mismatch")
+
         parsed.update({'posambiguity': posambiguity})
 
         # we center the position inside the ambiguity box

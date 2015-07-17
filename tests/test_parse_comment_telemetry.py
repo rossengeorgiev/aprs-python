@@ -1,6 +1,6 @@
-import unittest
+import unittest2 as unittest
 
-from aprslib.parse import _parse_comment_telemetry
+from aprslib.parsing import _parse_comment_telemetry
 from aprslib import base91
 from random import randint
 
@@ -42,13 +42,13 @@ class ParseCommentTelemetry(unittest.TestCase):
         return "".join(text)
 
     def test_random_valid_telemetry(self):
-        for i in xrange(100):
-            vals = [randint(0, self.b91max) for x in xrange(randint(1, 5))]
+        for i in range(100):
+            vals = [randint(0, self.b91max) for x in range(randint(1, 5))]
 
             bits = None
 
             if len(vals) is 5 and randint(1, 10) > 5:
-                bits = "{:08b}".format(randint(0, 255))[::-1]
+                bits = "{0:08b}".format(randint(0, 255))[::-1]
 
             testData = self.genTelem(i, vals, bits)
 
