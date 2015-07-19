@@ -65,6 +65,25 @@ MTYPE_TABLE_CUSTOM = {
     }
 
 
+def _unicode_packet(packet):
+    # attempt utf-8
+    try:
+        return packet.decode('utf-8')
+    except UnicodeDecodeError:
+        pass
+
+    # attempt to detect encoding
+    res = chardet.detect(packet.split(b':', 1)[-1])
+    if res['confidence'] > 0.7:
+        try:
+            return packet.decode(res['encoding'])
+        except UnicodeDecodeError:
+            pass
+
+    # if everything fails
+    return packet.decode('latin-1')
+
+
 def parse(packet):
     """
     Parses an APRS packet and returns a dict with decoded data
@@ -83,15 +102,7 @@ def parse(packet):
 
     # attempt to detect encoding
     if isinstance(packet, bytes):
-        try:
-            packet = packet.decode('utf-8')
-        except UnicodeDecodeError:
-            res = chardet.detect(packet.split(b':', 1)[-1])
-
-            if res['confidence'] > 0.7:
-                packet = packet.decode(res['encoding'])
-            else:
-                packet = packet.decode('latin-1')
+        packet = _unicode_packet(packet)
 
     packet = packet.rstrip("\r\n")
     logger.debug("Parsing: %s", packet)
@@ -618,7 +629,7 @@ def _parse_mice(dstcall, body):
         body = body[8:]
 
         # check for optional 2 or 5 channel telemetry
-        match = re.findall(r"^('[0-9a-f]{10}|`[0-9-af]{4})(.*)$", body)
+        match = re.findall(r"^('[0-9a-f]{10}|`[0-9a-f]{4})(.*)$", body)
         if match:
             hexdata, body = match[0]
 
