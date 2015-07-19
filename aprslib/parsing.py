@@ -629,7 +629,7 @@ def _parse_mice(dstcall, body):
         body = body[8:]
 
         # check for optional 2 or 5 channel telemetry
-        match = re.findall(r"^('[0-9a-f]{10}|`[0-9-af]{4})(.*)$", body)
+        match = re.findall(r"^('[0-9a-f]{10}|`[0-9a-f]{4})(.*)$", body)
         if match:
             hexdata, body = match[0]
 
