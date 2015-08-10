@@ -114,10 +114,11 @@ class IS(object):
                 self._connect()
                 self._send_login()
                 break
-            except:
+            except (LoginError, ConnectionError):
                 if not blocking:
                     raise
 
+            self.logger.info("Retrying connection is %d seconds." % retry)
             time.sleep(retry)
 
     def close(self):
@@ -252,12 +253,14 @@ class IS(object):
             else:
                 raise ConnectionError("invalid banner from server")
 
-        except ConnectionError:
+        except ConnectionError as e:
+            self.logger.error(str(e))
             self.close()
             raise
         except (socket.error, socket.timeout) as e:
             self.close()
 
+            self.logger.error("Socket error: %s" % str(e))
             if str(e) == "timed out":
                 raise ConnectionError("no banner from server")
             else:
@@ -303,12 +306,14 @@ class IS(object):
             else:
                 self.logger.info("Login successful")
 
-        except LoginError:
+        except LoginError as e:
+            self.logger.error(str(e))
             self.close()
             raise
         except:
             self.close()
-            raise LoginError("failed to login")
+            self.logger.error("Failed to login")
+            raise LoginError("Failed to login")
 
     def _socket_readlines(self, blocking=False):
         """
@@ -317,6 +322,7 @@ class IS(object):
         try:
             self.sock.setblocking(0)
         except socket.error as e:
+            self.logger.error("socket error when setblocking(0): %s" % str(e))
             raise ConnectionDrop("connection dropped")
 
         while True:
@@ -330,8 +336,10 @@ class IS(object):
 
                 # sock.recv returns empty if the connection drops
                 if not short_buf:
+                    self.logger.error("socket.recv(): returned empty")
                     raise ConnectionDrop("connection dropped")
             except socket.error as e:
+                self.logger.error("socket error on recv(): %s" % str(e))
                 if "Resource temporarily unavailable" in str(e):
                     if not blocking:
                         if len(self.buf) == 0:

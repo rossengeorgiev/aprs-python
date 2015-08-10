@@ -252,9 +252,9 @@ class TC_IS(unittest.TestCase):
     def test_connect_raising_exceptions(self):
         self.m.StubOutWithMock(self.ais, "_connect")
         self.m.StubOutWithMock(self.ais, "_send_login")
-        self.ais._connect().AndRaise(Exception("first"))
+        self.ais._connect().AndRaise(aprslib.exceptions.ConnectionError("first"))
         self.ais._connect()
-        self.ais._send_login().AndRaise(Exception("second"))
+        self.ais._send_login().AndRaise(aprslib.exceptions.LoginError("second"))
         self.ais._connect()
         self.ais._send_login()
         self.m.ReplayAll()
