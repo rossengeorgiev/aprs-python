@@ -22,7 +22,6 @@ import socket
 import select
 import time
 import logging
-import sys
 
 from . import __version__, string_type, is_py3
 from .parsing import parse
@@ -235,14 +234,6 @@ class IS(object):
             self.sock.settimeout(5)
 
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-
-            if sys.platform not in ['cygwin', 'win32']:
-                # these things don't exist in socket under Windows
-                # pylint: disable=E1103
-                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 15)
-                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
-                self.sock.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 5)
-                # pylint: enable=E1103
 
             banner = self.sock.recv(512)
             if is_py3:
