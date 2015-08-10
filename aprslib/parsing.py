@@ -35,7 +35,7 @@ except ImportError:
             return {'confidence': 0.0, 'encoding': 'windows-1252'}
 
 from .exceptions import (UnknownFormat, ParseError)
-from . import base91, string_type_parse, is_py3
+from . import base91, string_type_parse
 
 __all__ = ['parse']
 
@@ -98,7 +98,7 @@ def parse(packet):
     """
 
     if not isinstance(packet, string_type_parse):
-        raise TypeError("Epected packet to be str/unicode/bytes, got %s", type(packet))
+        raise TypeError("Expected packet to be str/unicode/bytes, got %s", type(packet))
 
     # attempt to detect encoding
     if isinstance(packet, bytes):
