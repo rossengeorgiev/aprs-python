@@ -169,10 +169,6 @@ class TC_IS(unittest.TestCase):
         self.ais.sock.setblocking(mox.IgnoreArg())
         self.ais.sock.settimeout(mox.IgnoreArg())
         self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-        if sys.platform not in ['cygwin', 'win32']:
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         self.ais.sock.recv(mox.IgnoreArg()).AndReturn(b"junk")
         self.ais.close()
         # part 3 - everything going well
@@ -181,10 +177,6 @@ class TC_IS(unittest.TestCase):
         self.ais.sock.setblocking(mox.IgnoreArg())
         self.ais.sock.settimeout(mox.IgnoreArg())
         self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-        if sys.platform not in ['cygwin', 'win32']:
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-            self.ais.sock.setsockopt(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         self.ais.sock.recv(mox.IgnoreArg()).AndReturn(b"# server banner")
         mox.Replay(self.ais.sock)
         self.m.ReplayAll()
