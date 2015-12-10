@@ -1,7 +1,7 @@
 APRS library for Python
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-|pypi| |coverage| |master_build| |dev_build|
+|pypi| |coverage| |master_build|
 
 A tiny library for dealing with APRS. It can be used to connect and listen to the APRS-IS feed as well as upload.
 Parsing of packets is also possible, but the entire spec is not fully implemented yet.
@@ -161,8 +161,4 @@ Docs
 .. |master_build| image:: https://img.shields.io/travis/rossengeorgiev/aprs-python/master.svg?style=flat&label=master%20build
     :target: http://travis-ci.org/rossengeorgiev/aprs-python
     :alt: Build status of master branch
-    
-.. |dev_build| image:: https://img.shields.io/travis/rossengeorgiev/aprs-python/dev.svg?style=flat&label=dev%20build
-    :target: http://travis-ci.org/rossengeorgiev/aprs-python
-    :alt: Build status of dev branch
 
