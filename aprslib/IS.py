@@ -225,9 +225,9 @@ class IS(object):
         try:
             self._open_socket()
 
-            raddr, rport = self.sock.getpeername()
+            peer = self.sock.getpeername()
 
-            self.logger.info("Connected to %s:%s", raddr, rport)
+            self.logger.info("Connected to %s", str(peer))
 
             # 5 second timeout to receive server banner
             self.sock.setblocking(1)
