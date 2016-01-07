@@ -243,10 +243,16 @@ def parse(packet):
                     logger.debug("Parsed as normal position report")
                 else:
                     raise ParseError("invalid format")
-
-            # decode comment
-            body, result = _parse_comment(body)
-            parsed.update(result)
+            # check comment for weather information
+            # Page 62 of the spec
+            if parsed['symbol'] == '_':
+                logger.debug("Attempting to parse weather report from comment")
+                body, result = _parse_comment_weather(body)
+                parsed.update(result)
+            else:
+                # decode comment
+                body, result = _parse_comment(body)
+                parsed.update(result)
 
             if packet_type == ';':
                 parsed.update({
@@ -396,9 +402,8 @@ def _parse_timestamp(body, packet_type=''):
 
 def _parse_comment(body):
     parsed = {}
-
     # attempt to parse remaining part of the packet (comment field)
-    # try CRS/SPD/
+    # try CRS/SPD
     match = re.findall(r"^([0-9]{3})/([0-9]{3})", body)
     if match:
         cse, spd = match[0]
@@ -924,5 +929,133 @@ def _parse_normal(body):
             'latitude': latitude,
             'longitude': longitude,
             })
+
+    return (body, parsed)
+
+
+def _parse_comment_weather(body):
+    wind_multiplier = 0.44704
+    rain_multiplier = 0.254
+
+    parsed = {}
+    match = re.findall(r"^([0-9]{3})/([0-9]{3})", body)
+    if match:
+        wind_direction, wind_speed = match[0]
+        parsed.update({
+            'wind_direction': int(wind_direction),
+            # mph to meters per second
+            'wind_speed': float(int(wind_speed) * wind_multiplier)
+        })
+
+    match = re.findall(r"g([0-9]{3})", body)
+    if match:
+        wind_gust = match[0]
+        parsed.update({
+            # mph to meters per second
+            'wind_gust': float(int(wind_gust) * wind_multiplier)
+        })
+
+    # Positionless Weather report
+    match = re.findall(r"c([0-9]{3})s([0-9]{3})", body)
+    if match:
+        wind_direction, wind_speed = match[0]
+        parsed.update({
+            'wind_direction': int(wind_direction),
+            # mph to meters per second
+            'wind_speed': float(int(wind_speed) * wind_multiplier)
+        })
+
+    match = re.findall(r"(?<!c[0-9. ]{3})s([.0-9]{3})", body)
+    if match:
+        snow = match[0]
+        parsed.update({
+            # inches to mm
+            'snow': float(snow) * 25.4
+        })
+
+    match = re.findall(r"g([0-9]{3})", body)
+    if match:
+        wind_gust = match[0]
+        parsed.update({
+            # mph to meters per second
+            'wind_gust': float(int(wind_gust) * wind_multiplier)
+        })
+
+    match = re.findall(r"t([0-9]{3})", body)
+    if match:
+        degrees_farenheit = match[0]
+        parsed.update({
+            # Farenheight to Centigrade
+            'temp': float(int(degrees_farenheit) - 32) / 1.8
+        })
+
+    # Negative Farenheight
+    match = re.findall(r"t(-[0-9]{2})", body)
+    if match:
+        degrees_farenheit = match[0]
+        parsed.update({
+            # Farenheight to Centigrade
+            'temp': (float(degrees_farenheit) - 32) / 1.8
+        })
+
+    match = re.findall(r"r([0-9]{3})", body)
+    if match:
+        rainfall_hour = match[0]
+        parsed.update({
+            # hundreths of an inch to mm
+            'rain_1h': float(int(rainfall_hour) * rain_multiplier)
+        })
+
+    match = re.findall(r"p([0-9]{3})", body)
+    if match:
+        rainfall_24h = match[0]
+        parsed.update({
+            'rain_24h': float(int(rainfall_24h) * rain_multiplier)
+        })
+
+    match = re.findall(r"P([0-9]{3})", body)
+    if match:
+        rainfall_since_midnight = match[0]
+        parsed.update({
+            # hundreths of an inch to mm
+            'rain_since_mid': float(int(rainfall_since_midnight) * 0.254)
+        })
+
+    match = re.findall(r"h([0-9]{2})", body)
+    if match:
+        humidity = match[0]
+        parsed.update({
+            'humidity': int(humidity)
+        })
+
+    match = re.findall(r"b([0-9]{5})", body)
+    if match:
+        pressure = match[0]
+        parsed.update({
+            # deci hPA to hPa
+            'hPa': float(pressure) / 10
+        })
+
+    match = re.findall(r"l([0-9]{3})", body)
+    if match:
+        luminosity = match[0]
+        parsed.update({
+            # http://www.aprs.org/aprs11/spec-wx.txt
+            'luminosity': int(luminosity) + 1000
+        })
+
+    match = re.findall(r"L([0-9]{3})", body)
+    if match:
+        luminosity = match[0]
+        parsed.update({
+            'luminosity': int(luminosity)
+        })
+
+    match = re.findall(r"\#([0-9]{3})", body)
+    if match:
+        rain_raw = match[0]
+        parsed.update({
+            'rain_raw': int(rain_raw)
+        })
 
     return (body, parsed)
