@@ -248,7 +248,10 @@ def parse(packet):
             if parsed['symbol'] == '_':
                 logger.debug("Attempting to parse weather report from comment")
                 body, result = _parse_comment_weather(body)
-                parsed.update({'weather': result})
+                parsed.update({
+                    'comment': body.strip(' '),
+                    'weather': result,
+                    })
             else:
                 # decode comment
                 body, result = _parse_comment(body)
