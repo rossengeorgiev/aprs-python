@@ -162,10 +162,9 @@ def parse(packet):
         # \ - unused
         # ] - unused
         # ^ - unused
-        # _ - positionless weather report
         # { - user defined
         # } - 3rd party traffic
-        if packet_type in '#$%)*,<?T[_{}':
+        if packet_type in '#$%)*,<?T[{}':
             raise UnknownFormat("format is not supported", packet)
 
         # STATUS PACKET
@@ -196,6 +195,23 @@ def parse(packet):
 
             body, result = _parse_message(body)
             parsed.update(result)
+
+        # POSITIONLESS WEATHER REPORT
+        elif packet_type == '_':
+            logger.debug("Attempting to parse as positionless weather report")
+
+            match = re.match("^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
+            if not match:
+                raise ParseError("invalid positionless weather report format")
+
+            comment, weather = _parse_weather_data(body[8:])
+
+            parsed.update({
+                'format': 'wx',
+                'wx_raw_timestamp': match.group(1),
+                'comment': comment.strip(' '),
+                'weather': weather,
+                })
 
         # postion report (regular or compressed)
         elif (packet_type in '!=/@;' or
@@ -247,7 +263,7 @@ def parse(packet):
             # Page 62 of the spec
             if parsed['symbol'] == '_':
                 logger.debug("Attempting to parse weather report from comment")
-                body, result = _parse_comment_weather(body)
+                body, result = _parse_weather_data(body)
                 parsed.update({
                     'comment': body.strip(' '),
                     'weather': result,
@@ -936,7 +952,7 @@ def _parse_normal(body):
     return (body, parsed)
 
 
-def _parse_comment_weather(body):
+def _parse_weather_data(body):
     wind_multiplier = 0.44704
     rain_multiplier = 0.254
 
