@@ -20,9 +20,15 @@ Provides facilities for covertion from/to base91
 """
 
 __all__ = ['to_decimal', 'from_decimal']
-from math import log
+from math import log, ceil
+import sys
 from re import findall
 from . import string_type, int_type
+
+if sys.version_info < (3,):
+    _range = xrange
+else:
+    _range = range
 
 
 def to_decimal(text):
@@ -36,6 +42,7 @@ def to_decimal(text):
     if findall(r"[\x00-\x20\x7c-\xff]", text):
         raise ValueError("invalid character in sequence")
 
+    text = text.lstrip('!')
     decimal = 0
     length = len(text) - 1
     for i, char in enumerate(text):
@@ -60,12 +67,15 @@ def from_decimal(number, padding=1):
     elif padding < 1:
         raise ValueError("Expected padding to be >0")
     elif number > 0:
-        for divisor in [91**e for e in reversed(range(int(log(number) / log(91)) + 1))]:
-            quotient = number // divisor
-            number = number % divisor
+        max_n = ceil(log(number) / log(91))
+
+        for n in _range(int(max_n), -1, -1):
+            quotient, number = divmod(number, 91**n)
             text.append(chr(33 + quotient))
 
-    # add padding if necessary
-    text = ['!'] * (padding-len(text)) + text
+    text = "".join(text).lstrip('!')
 
-    return "".join(text)
+    # add padding if necessary
+    text = '!' * (padding-len(text)) + text
+
+    return text

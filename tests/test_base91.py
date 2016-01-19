@@ -104,7 +104,7 @@ class c_Both(unittest.TestCase):
             self.assertEqual(result, number)
 
     def test_stability(self):
-        for number in range(50):
+        for number in range(200):
             largeN = 91 ** number
             text = base91.from_decimal(largeN)
             result = base91.to_decimal(text)
