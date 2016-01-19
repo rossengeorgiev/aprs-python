@@ -74,7 +74,7 @@ def _unicode_packet(packet):
 
     # attempt to detect encoding
     res = chardet.detect(packet.split(b':', 1)[-1])
-    if res['confidence'] > 0.7:
+    if res['confidence'] > 0.7 and res['encoding'] != 'EUC-TW':
         try:
             return packet.decode(res['encoding'])
         except UnicodeDecodeError:

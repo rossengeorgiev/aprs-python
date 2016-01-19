@@ -1,6 +1,13 @@
 CHANGES
 -------
 
+# 0.6.42
+
+- added parsing for WX (positionless and in comment)
+- fix exception due to EUC-TW encoding, #11
+
+# LOTS OF MINOR STUFF
+
 # v0.6.37
 
 - charset detection, unicode for all
