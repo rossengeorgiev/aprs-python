@@ -36,15 +36,6 @@ else:
     string_type_parse = string_type
     int_type = (int, long)
 
-# handles reloading
-if 'IS' in globals():
-    MODULES = __import__('sys').modules
-    for M in MODULES.keys():
-        if M[:len(__name__)+1] == "%s." % __name__:
-            del MODULES[M]
-
-    del MODULES
-    del M
 
 from datetime import date as _date
 __date__ = str(_date.today())
@@ -57,9 +48,4 @@ __all__ = ['IS', 'parse', 'passcode']
 from .exceptions import *
 from .parsing import parse
 from .passcode import passcode
-
-from .IS import IS
-
-
-class IS(IS):
-    pass
+from .inet import IS
