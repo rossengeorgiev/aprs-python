@@ -34,23 +34,21 @@ class a_FromDecimal(unittest.TestCase):
         for n in testData:
             self.assertRaises(ValueError, base91.from_decimal, n)
 
-    def test_invalid_padding_type(self):
+    def test_invalid_width_type(self):
         testData = ['0', '1', 1.0, None, [0], dict]
 
         for n in testData:
             self.assertRaises(TypeError, base91.from_decimal, 0, padding=n)
 
-    def test_valid_padding(self):
+    def test_valid_width(self):
         testData = [1, 2, 5, 10, 100]
 
         for n in testData:
             self.assertEqual(n, len(base91.from_decimal(0, n)))
 
-    def test_invalid_padding(self):
-        testData = [0, -1, -100]
-
-        for n in testData:
-            self.assertRaises(ValueError, base91.from_decimal, 0, padding=n)
+    def test_negative_width(self):
+        for n in [0, -1, -100]:
+            self.assertEqual(base91.from_decimal(0, width=n), '!')
 
 
 class b_ToDecimal(unittest.TestCase):
