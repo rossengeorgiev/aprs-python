@@ -34,8 +34,8 @@ except ImportError:
         def detect(x):
             return {'confidence': 0.0, 'encoding': 'windows-1252'}
 
-from .exceptions import (UnknownFormat, ParseError)
-from . import base91, string_type_parse
+from aprslib.exceptions import (UnknownFormat, ParseError)
+from aprslib import base91, string_type_parse
 
 __all__ = ['parse']
 

@@ -23,7 +23,7 @@ __all__ = ['to_decimal', 'from_decimal']
 from math import log, ceil
 import sys
 from re import findall
-from . import string_type, int_type
+from aprslib import string_type, int_type
 
 if sys.version_info < (3,):
     _range = xrange

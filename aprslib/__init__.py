@@ -45,7 +45,7 @@ __version__ = "0.6.42"
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 
-from .exceptions import *
-from .parsing import parse
-from .passcode import passcode
-from .inet import IS
+from aprslib.exceptions import *
+from aprslib.parsing import parse
+from aprslib.passcode import passcode
+from aprslib.inet import IS

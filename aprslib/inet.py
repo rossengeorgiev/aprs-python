@@ -23,9 +23,9 @@ import select
 import time
 import logging
 
-from . import __version__, string_type, is_py3
-from .parsing import parse
-from .exceptions import (
+from aprslib import __version__, string_type, is_py3
+from aprslib.parsing import parse
+from aprslib.exceptions import (
     GenericError,
     ConnectionDrop,
     ConnectionError,
