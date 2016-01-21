@@ -148,7 +148,6 @@ def _try_to_parse_body(packet_type, body, parsed):
     # ) - item report
     # * - complete weather report
     # + - reserved
-    # , - invalid/test format
     # - - unused
     # . - reserved
     # < - station capabilities
@@ -158,10 +157,21 @@ def _try_to_parse_body(packet_type, body, parsed):
     # \ - unused
     # ] - unused
     # ^ - unused
-    # { - user defined
     # } - 3rd party traffic
-    if packet_type in '#$%)*,<?T[{}':
+    if packet_type in '#$%)*<?T[}':
         raise UnknownFormat("format is not supported")
+
+    # user defined
+    elif packet_type == ',':
+        logger.debug("Packet is invalid format")
+
+        body, result = _parse_invalid(body)
+
+    # user defined
+    elif packet_type == '{':
+        logger.debug("Packet is user-defined")
+
+        body, result = _parse_user_defined(body)
 
     # Status report
     elif packet_type == '>':
