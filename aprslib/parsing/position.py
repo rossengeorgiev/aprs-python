@@ -16,7 +16,7 @@ def _parse_position(packet_type, body):
     parsed = {}
 
     if packet_type not in '!=/@;':
-        prefix, body = body.split('!', 1)
+        _, body = body.split('!', 1)
         packet_type = '!'
 
     if packet_type == ';':

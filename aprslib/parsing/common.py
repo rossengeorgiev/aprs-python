@@ -21,7 +21,7 @@ def _validate_callsign(callsign, prefix=""):
     if not match:
         raise ParseError("%sinvalid callsign" % prefix)
 
-    callsign, x, ssid = match[0]
+    callsign, _, ssid = match[0]
 
     if bool(ssid) and int(ssid) > 15:
         raise ParseError("%sssid not in 0-15 range" % prefix)

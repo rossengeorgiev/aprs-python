@@ -283,7 +283,7 @@ class IS(object):
 
             self.logger.debug("Server: %s", test)
 
-            (x, x, callsign, status, x) = test.split(' ', 4)
+            _, _, callsign, status, _ = test.split(' ', 4)
 
             if callsign == "":
                 raise LoginError("Server responded with empty callsign???")
