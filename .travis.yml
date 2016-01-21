@@ -11,8 +11,10 @@ python:
 install:
     - make init
     - pip install coveralls
+    - pip install scrutinizer-ocular
 script:
-    make test
+    - make test
 after_success:
-    coveralls
+    - coveralls
+    - ocular
 
