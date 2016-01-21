@@ -1,0 +1,75 @@
+import re
+from aprslib.exceptions import ParseError
+
+__all__ = [
+    '_parse_weather',
+    '_parse_weather_data',
+    ]
+
+def _parse_weather(body):
+    match = re.match("^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
+    if not match:
+        raise ParseError("invalid positionless weather report format")
+
+    comment, weather = _parse_weather_data(body[8:])
+
+    parsed = {
+        'format': 'wx',
+        'wx_raw_timestamp': match.group(1),
+        'comment': comment.strip(' '),
+        'weather': weather,
+        }
+
+    return ('', parsed)
+
+
+def _parse_weather_data(body):
+    wind_multiplier = 0.44704
+    rain_multiplier = 0.254
+
+    key_map = {
+        'g': 'wind_gust',
+        'c': 'wind_direction',
+        't': 'temperature',
+        'S': 'wind_speed',
+        'r': 'rain_1h',
+        'p': 'rain_24h',
+        'P': 'rain_since_midnight',
+        'h': 'humidity',
+        'b': 'pressure',
+        'l': 'luminosity',
+        'L': 'luminosity',
+        's': 'snow',
+        '#': 'rain_raw',
+    }
+    val_map = {
+        'g': lambda x: int(x) * wind_multiplier,
+        'c': lambda x: int(x),
+        'S': lambda x: int(x) * wind_multiplier,
+        't': lambda x: (float(x) - 32) / 1.8,
+        'r': lambda x: int(x) * rain_multiplier,
+        'p': lambda x: int(x) * rain_multiplier,
+        'P': lambda x: int(x) * rain_multiplier,
+        'h': lambda x: int(x),
+        'b': lambda x: float(x) / 10,
+        'l': lambda x: int(x) + 1000,
+        'L': lambda x: int(x),
+        's': lambda x: float(x) * 25.4,
+        '#': lambda x: int(x),
+    }
+
+    parsed = {}
+
+    # parse weather data
+    body = re.sub(r"^([0-9]{3})/([0-9]{3})", "c\\1s\\2", body)
+    body = body.replace('s', 'S', 1)
+
+    data = re.findall(r"([cSgtrpPlLs#]\d{3}|t-\d{2}|h\d{2}|b\d{5}|s\.\d{2}|s\d\.\d)", body)
+    data = map(lambda x: (key_map[x[0]] , val_map[x[0]](x[1:])), data)
+
+    parsed.update(dict(data))
+
+    # strip weather data
+    body = re.sub(r"([cSgtrpPlLs#][0-9\-\. ]{3}|h[0-9\. ]{2}|b[0-9\. ]{5})", '', body)
+
+    return (body, parsed)

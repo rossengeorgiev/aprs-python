@@ -84,10 +84,6 @@ class ParseBranchesTestCase(unittest.TestCase):
         self.m.UnsetStubs()
 
     def test_status_format_branch(self):
-        self.m.StubOutWithMock(parsing, "_parse_timestamp")
-        parsing._parse_timestamp(mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(("test", {}))
-        self.m.ReplayAll()
-
         def _u(text, c='utf8'):
             if sys.version_info[0] >= 3:
                 return text
@@ -106,7 +102,6 @@ class ParseBranchesTestCase(unittest.TestCase):
         result = parse("A>B:>test")
 
         self.assertEqual(result, expected)
-        self.m.VerifyAll()
 
     def test_mice_format_branch(self):
         self.m.StubOutWithMock(parsing, "_parse_mice")
