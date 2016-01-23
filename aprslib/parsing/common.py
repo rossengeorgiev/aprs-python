@@ -127,8 +127,7 @@ def _parse_timestamp(body, packet_type=''):
     return (body, parsed)
 
 
-def _parse_comment(body):
-    parsed = {}
+def _parse_comment(body, parsed):
     # attempt to parse remaining part of the packet (comment field)
     # try CRS/SPD
     match = re.findall(r"^([0-9]{3})/([0-9]{3})", body)
@@ -163,17 +162,41 @@ def _parse_comment(body):
     match = re.findall(r"^(.*?)/A=(\-\d{5}|\d{6})(.*)$", body)
 
     if match:
-        body, altitude, post = match[0]
-        body += post  # glue front and back part together, DONT ASK
+        body, altitude, rest = match[0]
+        body += rest
 
         parsed.update({'altitude': int(altitude)*0.3048})
 
     body, telemetry = _parse_comment_telemetry(body)
     parsed.update(telemetry)
 
+    # parse DAO extention
+    body = _parse_dao(body, parsed)
+
     if len(body) > 0 and body[0] == "/":
         body = body[1:]
 
     parsed.update({'comment': body.strip(' ')})
 
-    return ('', parsed)
+
+def _parse_dao(body, parsed):
+    match = re.findall("^(.*)\!([\x21-\x7b][\x20-\x7b]{2})\!(.*?)$", body)
+    if match:
+        body, dao, rest = match[0]
+        body += rest
+
+        parsed.update({'daodatumbyte': dao[0].upper()})
+
+        lat_offset = lon_offset = 0
+
+        if re.match("^[A-Z]", dao):
+            lat_offset = int(dao[1]) * 0.001 / 60
+            lon_offset = int(dao[2]) * 0.001 / 60
+        elif re.match("^[a-z]", dao):
+            lat_offset = base91.to_decimal(dao[1]) / 91.0 * 0.01 / 60
+            lon_offset = base91.to_decimal(dao[2]) / 91.0 * 0.01 / 60
+
+        parsed['latitude'] += lat_offset if parsed['latitude'] >= 0 else -lat_offset
+        parsed['longitude'] += lon_offset if parsed['longitude'] >= 0 else -lon_offset
+
+    return body

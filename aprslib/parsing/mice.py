@@ -2,6 +2,7 @@ import re
 import math
 from aprslib import base91
 from aprslib.exceptions import ParseError
+from aprslib.parsing.common import _parse_dao
 from aprslib.parsing.telemetry import _parse_comment_telemetry
 
 __all__ = [
@@ -210,7 +211,8 @@ def _parse_mice(dstcall, body):
         body, telemetry = _parse_comment_telemetry(body)
         parsed.update(telemetry)
 
-        #TODO !DAO! parsing
+        # parse DAO extention
+        body = _parse_dao(body, parsed)
 
         # rest is a comment
         parsed.update({'comment': body.strip(' ')})

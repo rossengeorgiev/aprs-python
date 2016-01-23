@@ -68,8 +68,7 @@ def _parse_position(packet_type, body):
             })
     else:
         # decode comment
-        body, result = _parse_comment(body)
-        parsed.update(result)
+        _parse_comment(body, parsed)
 
     if packet_type == ';':
         parsed.update({
