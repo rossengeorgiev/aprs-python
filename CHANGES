@@ -3,6 +3,9 @@ CHANGES
 
 # 0.6.42
 
+- added DAO parsing
+- added parsing for invalid & user-defined formats
+- split parsing module into submodules
 - fix rounding error in base91.from_decimal
 - added py35, pypy, pypy3 to travis
 - fix exception due to EUC-TW encoding, #11
