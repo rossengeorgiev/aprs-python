@@ -3,6 +3,8 @@ CHANGES
 
 # 0.6.42
 
+- added util submodule containing various helper functions
+- added objects for creating packets (PositionReport, APRSPacket in packets submodule)
 - added DAO parsing
 - added parsing for invalid & user-defined formats
 - split parsing module into submodules
