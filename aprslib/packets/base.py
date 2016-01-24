@@ -1,16 +1,30 @@
-
+from aprslib import parse
+from aprslib.parsing.common import _parse_header
 
 class APRSPacket(object):
-    def __init__(self, fromcall, tocall, path=[]):
-        self.fromcall = fromcall
-        self.tocall = tocall
-        self.path = path
+    format = 'raw'
+    fromcall = 'N0CALL'
+    tocall = 'N0CALL'
+    path = []
+
+    def __init__(self, data=None):
+        if data:
+            self.load(data)
 
     def __repr__(self):
         return "<%s(%s)>" % (
                     self.__class__.__name__,
                     repr(str(self)),
                     )
+
+    def __str__(self):
+        return "%s:%s" % (
+            self._serialize_header(),
+            self._serialize_body(),
+            )
+
+    def __eq__(self, other):
+        return str(self) == str(other)
 
     def _serialize_header(self):
         header = "%s>%s" % (self.fromcall, self.tocall)
@@ -23,9 +37,20 @@ class APRSPacket(object):
     def _serialize_body(self):
         return getattr(self, 'body', '')
 
-    def __str__(self):
-        return "%s:%s" % (
-            self._serialize_header(),
-            self._serialize_body(),
-            )
 
+    def load(self, obj):
+        if not isinstance(obj, dict):
+            if self.format == 'raw':
+                header, self.body = obj.split(":", 1)
+                obj = _parse_header(header)
+            else:
+                obj = parse(obj)
+
+        for k, v in obj.items():
+            if k == 'format':
+                continue
+            if k == 'to' or k == 'from':
+                k += 'call'
+
+            if hasattr(self, k):
+                setattr(self, k, v)

@@ -4,6 +4,7 @@ from aprslib.util import latitude_to_ddm, longitude_to_ddm, comment_altitude
 
 
 class PositionReport(APRSPacket):
+    format = 'uncompressed'
     latitude = 0
     longitude = 0
     symbol_table = '/'
