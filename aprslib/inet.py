@@ -25,6 +25,7 @@ import logging
 
 from aprslib import __version__, string_type, is_py3
 from aprslib.parsing import parse
+from aprslib.packets.base import APRSPacket
 from aprslib.exceptions import (
     GenericError,
     ConnectionDrop,
@@ -136,8 +137,10 @@ class IS(object):
         """
         Send a line, or multiple lines sperapted by '\\r\\n'
         """
-        if not isinstance(line, string_type):
-            raise TypeError("Expected line to be str, got %s", type(line))
+        if isinstance(line, APRSPacket):
+            line = str(line)
+        elif not isinstance(line, string_type):
+            raise TypeError("Expected line to be str or APRSPacket, got %s", type(line))
         if not self._connected:
             raise ConnectionError("not connected")
 
