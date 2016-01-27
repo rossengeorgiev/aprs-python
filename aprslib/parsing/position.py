@@ -3,16 +3,16 @@ import re
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
-from aprslib.parsing.common import _parse_timestamp, _parse_comment
-from aprslib.parsing.weather import _parse_weather_data
+from aprslib.parsing.common import parse_timestamp, parse_comment
+from aprslib.parsing.weather import parse_weather_data
 
 __all__ = [
-        '_parse_position',
-        '_parse_compressed',
-        '_parse_normal',
+        'parse_position',
+        'parse_compressed',
+        'parse_normal',
         ]
 
-def _parse_position(packet_type, body):
+def parse_position(packet_type, body):
     parsed = {}
 
     if packet_type not in '!=/@;':
@@ -37,20 +37,20 @@ def _parse_position(packet_type, body):
 
     # decode timestamp
     if packet_type in "/@;":
-        body, result = _parse_timestamp(body, packet_type)
+        body, result = parse_timestamp(body, packet_type)
         parsed.update(result)
 
     if len(body) == 0 and 'timestamp' in parsed:
         raise ParseError("invalid position report format", packet)
 
     # decode body
-    body, result = _parse_compressed(body)
+    body, result = parse_compressed(body)
     parsed.update(result)
 
     if len(result) > 0:
         logger.debug("Parsed as compressed position report")
     else:
-        body, result = _parse_normal(body)
+        body, result = parse_normal(body)
         parsed.update(result)
 
         if len(result) > 0:
@@ -61,14 +61,14 @@ def _parse_position(packet_type, body):
     # Page 62 of the spec
     if parsed['symbol'] == '_':
         logger.debug("Attempting to parse weather report from comment")
-        body, result = _parse_weather_data(body)
+        body, result = parse_weather_data(body)
         parsed.update({
             'comment': body.strip(' '),
             'weather': result,
             })
     else:
         # decode comment
-        _parse_comment(body, parsed)
+        parse_comment(body, parsed)
 
     if packet_type == ';':
         parsed.update({
@@ -78,7 +78,7 @@ def _parse_position(packet_type, body):
 
     return ('', parsed)
 
-def _parse_compressed(body):
+def parse_compressed(body):
     parsed = {}
 
     if re.match(r"^[\/\\A-Za-j][!-|]{8}[!-{}][ -|]{3}", body):
@@ -129,7 +129,7 @@ def _parse_compressed(body):
     return (body, parsed)
 
 
-def _parse_normal(body):
+def parse_normal(body):
     parsed = {}
 
     match = re.findall(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{2})([NnSs])([\/\\0-9A-Z])"

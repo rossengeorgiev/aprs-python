@@ -2,17 +2,17 @@ import unittest2 as unittest
 import string
 from random import randint, randrange, sample
 
-from aprslib.parsing import _parse_header
-from aprslib.parsing import _validate_callsign
+from aprslib.parsing import parse_header
+from aprslib.parsing import validate_callsign
 from aprslib.exceptions import ParseError
 
 
 class ValidateCallsign(unittest.TestCase):
 
-    def test_valid_input(self):
+    def testvalid_input(self):
         chars = string.ascii_letters.upper() + string.digits
 
-        def random_valid_callsigns():
+        def randomvalid_callsigns():
             for x in range(0, 500):
                 call = "".join(sample(chars, randrange(1, 6)))
 
@@ -21,13 +21,13 @@ class ValidateCallsign(unittest.TestCase):
 
                 yield call
 
-        for call in random_valid_callsigns():
+        for call in randomvalid_callsigns():
             try:
-                _validate_callsign(call)
+                validate_callsign(call)
             except ParseError:
                 self.fail(
                     "%s('%s') raised ParseError" %
-                    (_validate_callsign.__name__, call)
+                    (validate_callsign.__name__, call)
                     )
 
     def test_invalid_input(self):
@@ -43,12 +43,12 @@ class ValidateCallsign(unittest.TestCase):
             ]
 
         for call in testData:
-            self.assertRaises(ParseError, _validate_callsign, call)
+            self.assertRaises(ParseError, validate_callsign, call)
 
 
 class ParseHeader(unittest.TestCase):
 
-    def test_valid_input_and_format(self):
+    def testvalid_input_and_format(self):
         # empty path header
         expected = {
             "from": "A",
@@ -56,7 +56,7 @@ class ParseHeader(unittest.TestCase):
             "via": "",
             "path": []
             }
-        result = _parse_header("A>B")
+        result = parse_header("A>B")
 
         self.assertEqual(expected, result)
 
@@ -67,7 +67,7 @@ class ParseHeader(unittest.TestCase):
             "via": "",
             "path": list('CDE')
             }
-        result2 = _parse_header("A>B,C,D,E")
+        result2 = parse_header("A>B,C,D,E")
 
         self.assertEqual(expected2, result2)
 
@@ -78,7 +78,7 @@ class ParseHeader(unittest.TestCase):
             "via": "E",
             "path": ['C', 'D', 'qAR', 'E']
             }
-        result3 = _parse_header("A>B,C,D,qAR,E")
+        result3 = parse_header("A>B,C,D,qAR,E")
 
         self.assertEqual(expected3, result3)
 
@@ -89,11 +89,11 @@ class ParseHeader(unittest.TestCase):
                 "via": "C",
                 "path": [qCon, 'C']
                 }
-            result4 = _parse_header("A>B,%s,C" % qCon)
+            result4 = parse_header("A>B,%s,C" % qCon)
 
             self.assertEqual(expected4, result4)
 
-    def test_valid_fromcallsigns(self):
+    def testvalid_fromcallsigns(self):
         testData = [
             "A>CALL",
             "4>CALL",
@@ -117,10 +117,10 @@ class ParseHeader(unittest.TestCase):
 
         for head in testData:
             try:
-                _parse_header(head)
+                parse_header(head)
             except ParseError as msg:
                 self.fail("{0}('{1}') PraseError, {2}"
-                          .format(_parse_header.__name__, head, msg))
+                          .format(parse_header.__name__, head, msg))
 
     def test_invalid_format(self):
         testData = [
@@ -144,9 +144,9 @@ class ParseHeader(unittest.TestCase):
 
         for head in testData:
             try:
-                _parse_header(head)
+                parse_header(head)
                 self.fail("{0} didn't raise exception for: {1}"
-                          .format(_parse_header.__name__, head))
+                          .format(parse_header.__name__, head))
             except ParseError:
                 continue
 

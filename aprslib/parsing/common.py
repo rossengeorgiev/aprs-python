@@ -4,16 +4,16 @@ from datetime import datetime
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
-from aprslib.parsing.telemetry import _parse_comment_telemetry
+from aprslib.parsing.telemetry import parse_comment_telemetry
 
 __all__ = [
-    '_validate_callsign',
-    '_parse_header',
-    '_parse_timestamp',
-    '_parse_comment',
+    'validate_callsign',
+    'parse_header',
+    'parse_timestamp',
+    'parse_comment',
     ]
 
-def _validate_callsign(callsign, prefix=""):
+def validate_callsign(callsign, prefix=""):
     prefix = '%s: ' % prefix if bool(prefix) else ''
 
     match = re.findall(r"^([A-Z0-9]{1,6})(-(\d{1,2}))?$", callsign)
@@ -27,26 +27,15 @@ def _validate_callsign(callsign, prefix=""):
         raise ParseError("%sssid not in 0-15 range" % prefix)
 
 
-def _parse_header(head):
+def parse_header(head):
     """
     Parses the header part of packet
     Returns a dict
     """
-    #  CALL1>CALL2,CALL3,CALL4,CALL5:
-    # |from-|--to-|------path-------|
-    #
     try:
         (fromcall, path) = head.split('>', 1)
     except:
         raise ParseError("invalid packet header")
-
-    # looking at aprs.fi, the rules for from/src callsign
-    # are a lot looser, causing a lot of packets to fail
-    # this check.
-    #
-    # if len(fromcall) == 0:
-    #    raise ParseError("no fromcallsign in header")
-    # _validate_callsign(fromcall, "fromcallsign")
 
     if (not 1 <= len(fromcall) <= 9 or
        not re.findall(r"^[a-z0-9]{0,9}(\-[a-z0-9]{1,8})?$", fromcall, re.I)):
@@ -61,7 +50,7 @@ def _parse_header(head):
     tocall = path[0]
     path = path[1:]
 
-    _validate_callsign(tocall, "tocallsign")
+    validate_callsign(tocall, "tocallsign")
 
     for digi in path:
         if not re.findall(r"^[A-Z0-9\-]{1,9}\*?$", digi, re.I):
@@ -73,12 +62,6 @@ def _parse_header(head):
         'path': path,
         }
 
-    # viacall is the callsign that gated the packet to the net
-    # it's located behind the q-contructed
-    #
-    #  CALL1>CALL2,CALL3,qAR,CALL5:
-    #  .....................|-via-|
-    #
     viacall = ""
     if len(path) >= 2 and re.match(r"^q..$", path[-2]):
         viacall = path[-1]
@@ -88,7 +71,7 @@ def _parse_header(head):
     return parsed
 
 
-def _parse_timestamp(body, packet_type=''):
+def parse_timestamp(body, packet_type=''):
     parsed = {}
 
     match = re.findall(r"^((\d{6})(.))$", body[0:7])
@@ -127,9 +110,7 @@ def _parse_timestamp(body, packet_type=''):
     return (body, parsed)
 
 
-def _parse_comment(body, parsed):
-    # attempt to parse remaining part of the packet (comment field)
-    # try CRS/SPD
+def parse_comment(body, parsed):
     match = re.findall(r"^([0-9]{3})/([0-9]{3})", body)
     if match:
         cse, spd = match[0]
@@ -167,11 +148,11 @@ def _parse_comment(body, parsed):
 
         parsed.update({'altitude': int(altitude)*0.3048})
 
-    body, telemetry = _parse_comment_telemetry(body)
+    body, telemetry = parse_comment_telemetry(body)
     parsed.update(telemetry)
 
     # parse DAO extention
-    body = _parse_dao(body, parsed)
+    body = parse_dao(body, parsed)
 
     if len(body) > 0 and body[0] == "/":
         body = body[1:]
@@ -179,7 +160,7 @@ def _parse_comment(body, parsed):
     parsed.update({'comment': body.strip(' ')})
 
 
-def _parse_dao(body, parsed):
+def parse_dao(body, parsed):
     match = re.findall("^(.*)\!([\x21-\x7b][\x20-\x7b]{2})\!(.*?)$", body)
     if match:
         body, dao, rest = match[0]

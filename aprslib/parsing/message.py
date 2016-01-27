@@ -1,9 +1,9 @@
 import re
 from aprslib.parsing import logger
-from aprslib.parsing.telemetry import _parse_telemetry_config
+from aprslib.parsing.telemetry import parse_telemetry_config
 
 __all__ = [
-        '_parse_message',
+        'parse_message',
         ]
 
 # MESSAGE PACKET
@@ -18,7 +18,7 @@ __all__ = [
 # :N3MIM:UNIT.Volts,deg.F,deg.F,Mbar,Kfeet,Clik,OPEN!,on,on,high
 # :N3MIM:EQNS.0,2.6,0,0,.53,-32,3,4.39,49,-32,3,18,1,2,3
 # :N3MIM:BITS.10110101,PROJECT TITLE...
-def _parse_message(body):
+def parse_message(body):
     parsed = {}
 
     # the while loop is used to easily break out once a match is found
@@ -63,7 +63,7 @@ def _parse_message(body):
         parsed.update({'addresse': addresse.rstrip(' ')})
 
         # check if it's a telemetry configuration message
-        body, result = _parse_telemetry_config(body)
+        body, result = parse_telemetry_config(body)
         if result:
             parsed.update(result)
             break

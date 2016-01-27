@@ -53,7 +53,7 @@ class ParseTestCase(unittest.TestCase):
     def test_empty_body(self):
         self.assertRaises(ParseError, parse, "A>B:")
 
-    def test_parse_header_exception(self):
+    def testparse_header_exception(self):
         self.assertRaises(ParseError, parse, "A:asd")
 
     def test_empty_body_of_format_that_is_not_status(self):
@@ -104,9 +104,9 @@ class ParseBranchesTestCase(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_mice_format_branch(self):
-        self.m.StubOutWithMock(parsing, "_parse_mice")
-        parsing._parse_mice("B", "test").AndReturn(('', {'format': ''}))
-        parsing._parse_mice("D", "test").AndReturn(('', {'format': ''}))
+        self.m.StubOutWithMock(parsing, "parse_mice")
+        parsing.parse_mice("B", "test").AndReturn(('', {'format': ''}))
+        parsing.parse_mice("D", "test").AndReturn(('', {'format': ''}))
         self.m.ReplayAll()
 
         parse("A>B:`test")
@@ -115,8 +115,8 @@ class ParseBranchesTestCase(unittest.TestCase):
         self.m.VerifyAll()
 
     def test_message_format_branch(self):
-        self.m.StubOutWithMock(parsing, "_parse_message")
-        parsing._parse_message("test").AndReturn(('', {'format': ''}))
+        self.m.StubOutWithMock(parsing, "parse_message")
+        parsing.parse_message("test").AndReturn(('', {'format': ''}))
         self.m.ReplayAll()
 
         parse("A>B::test")

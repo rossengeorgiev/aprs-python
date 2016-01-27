@@ -1,6 +1,6 @@
 import unittest2 as unittest
 
-from aprslib.parsing import _parse_weather_data
+from aprslib.parsing import parse_weather_data
 from aprslib.parsing import parse
 
 wind_multiplier = 0.44704
@@ -16,7 +16,7 @@ class ParseCommentWeather(unittest.TestCase):
             "wind_speed": (9 * wind_multiplier),
             "wind_direction": 9
         }
-        result = _parse_weather_data("009/009")
+        result = parse_weather_data("009/009")
         self.assertEqual(expected, result)
 
         # Daft result but possible
@@ -24,7 +24,7 @@ class ParseCommentWeather(unittest.TestCase):
             "wind_speed": (999 * wind_multiplier),
             "wind_direction": 999
         }
-        result = _parse_weather_data("999/999")
+        result = parse_weather_data("999/999")
         self.assertEqual(expected, result)
 
         #Positionless packet
@@ -32,7 +32,7 @@ class ParseCommentWeather(unittest.TestCase):
             "wind_speed": float(9 * wind_multiplier),
             "wind_direction": 9
         }
-        result = _parse_weather_data("c009s009")
+        result = parse_weather_data("c009s009")
         self.assertEqual(expected, result)
 
         # Daft result but possible
@@ -40,7 +40,7 @@ class ParseCommentWeather(unittest.TestCase):
             "wind_speed": (999 * wind_multiplier),
             "wind_direction": 999
         }
-        result = _parse_weather_data("c999s999")
+        result = parse_weather_data("c999s999")
         self.assertEqual(expected, result)
 
     def test_temp(self):
@@ -48,150 +48,150 @@ class ParseCommentWeather(unittest.TestCase):
         expected = "", {
             "temperature": float((-99.0 - 32) / 1.8)
         }
-        result = _parse_weather_data("t-99")
+        result = parse_weather_data("t-99")
         self.assertEqual(expected, result)
 
         # Misc
         expected = "", {
             "temperature": -40.0
         }
-        result = _parse_weather_data("t-40")
+        result = parse_weather_data("t-40")
         self.assertEqual(expected, result)
 
         # Zero F
         expected = "", {
             "temperature": -17.77777777777778
         }
-        result = _parse_weather_data("t000")
+        result = parse_weather_data("t000")
         self.assertEqual(expected, result)
 
         # Daft, but possible
         expected = "", {
             "temperature": 537.2222222222222
         }
-        result = _parse_weather_data("t999")
+        result = parse_weather_data("t999")
         self.assertEqual(expected, result)
 
     def test_rain_1h(self):
         expected = "", {
             "rain_1h": 0.0
         }
-        result = _parse_weather_data("r000")
+        result = parse_weather_data("r000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "rain_1h": float(999 * mm_multiplier)
         }
-        result = _parse_weather_data("r999")
+        result = parse_weather_data("r999")
         self.assertEqual(expected, result)
 
     def test_rain_24h(self):
         expected = "", {
             "rain_24h": 0.0
         }
-        result = _parse_weather_data("p000")
+        result = parse_weather_data("p000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "rain_24h": float(999 * mm_multiplier)
         }
-        result = _parse_weather_data("p999")
+        result = parse_weather_data("p999")
         self.assertEqual(expected, result)
 
     def test_rain_since_midnight(self):
         expected = "", {
             "rain_since_midnight": 0.0
         }
-        result = _parse_weather_data("P000")
+        result = parse_weather_data("P000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "rain_since_midnight": float(999 * mm_multiplier)
         }
-        result = _parse_weather_data("P999")
+        result = parse_weather_data("P999")
         self.assertEqual(expected, result)
 
     def test_humidity(self):
         expected = "", {
             "humidity": 0.0
         }
-        result = _parse_weather_data("h00")
+        result = parse_weather_data("h00")
         self.assertEqual(expected, result)
 
         expected = "", {
             "humidity": 99
         }
-        result = _parse_weather_data("h99")
+        result = parse_weather_data("h99")
         self.assertEqual(expected, result)
 
     def test_pressure(self):
         expected = "", {
             "pressure": 0.0
         }
-        result = _parse_weather_data("b00000")
+        result = parse_weather_data("b00000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "pressure": 9999.9
         }
-        result = _parse_weather_data("b99999")
+        result = parse_weather_data("b99999")
         self.assertEqual(expected, result)
 
     def test_luminosity(self):
         expected = "", {
             "luminosity": 000
         }
-        result = _parse_weather_data("L000")
+        result = parse_weather_data("L000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "luminosity": 999
         }
-        result = _parse_weather_data("L999")
+        result = parse_weather_data("L999")
         self.assertEqual(expected, result)
 
         expected = "", {
             "luminosity": 1123
         }
-        result = _parse_weather_data("l123")
+        result = parse_weather_data("l123")
         self.assertEqual(expected, result)
 
         expected = "", {
             "luminosity": 1999
         }
-        result = _parse_weather_data("l999")
+        result = parse_weather_data("l999")
         self.assertEqual(expected, result)
 
     def test_snow(self):
         expected = "", {
             "snow": 000
         }
-        result = _parse_weather_data("s...s000")
+        result = parse_weather_data("s...s000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "snow": float(5.5 * 25.4)
         }
-        result = _parse_weather_data("s...s5.5")
+        result = parse_weather_data("s...s5.5")
         self.assertEqual(expected, result)
 
         expected = "", {
             "snow": float(999 * 25.4)
         }
-        result = _parse_weather_data("s...s999")
+        result = parse_weather_data("s...s999")
         self.assertEqual(expected, result)
 
     def test_rain_raw(self):
         expected = "", {
             "rain_raw": 000
         }
-        result = _parse_weather_data("#000")
+        result = parse_weather_data("#000")
         self.assertEqual(expected, result)
 
         expected = "", {
             "rain_raw": 999
         }
-        result = _parse_weather_data("#999")
+        result = parse_weather_data("#999")
         self.assertEqual(expected, result)
 
     # Not possible in real world (rain and snow measurements)
@@ -253,7 +253,7 @@ class ParseCommentWeather(unittest.TestCase):
             "wind_speed": 1 * wind_multiplier
         }
 
-        result = _parse_weather_data("319/001g004t048r...p   P000h19b10294eCumulusWMR100")
+        result = parse_weather_data("319/001g004t048r...p   P000h19b10294eCumulusWMR100")
         self.assertEqual(expected, result)
 
 if __name__ == '__main__':

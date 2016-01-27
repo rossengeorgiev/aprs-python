@@ -2,11 +2,11 @@ import re
 import math
 from aprslib import base91
 from aprslib.exceptions import ParseError
-from aprslib.parsing.common import _parse_dao
-from aprslib.parsing.telemetry import _parse_comment_telemetry
+from aprslib.parsing.common import parse_dao
+from aprslib.parsing.telemetry import parse_comment_telemetry
 
 __all__ = [
-        '_parse_mice',
+        'parse_mice',
         ]
 
 # Mic-e message type table
@@ -37,7 +37,7 @@ MTYPE_TABLE_CUSTOM = {
 # 'lllc/s$/.........         Mic-E no message capability
 # 'lllc/s$/>........         Mic-E message capability
 # `lllc/s$/>........         Mic-E old posit
-def _parse_mice(dstcall, body):
+def parse_mice(dstcall, body):
     parsed = {'format': 'mic-e'}
 
     dstcall = dstcall.split('-')[0]
@@ -208,11 +208,11 @@ def _parse_mice(dstcall, body):
             body = body + extra
 
         # attempt to parse comment telemetry
-        body, telemetry = _parse_comment_telemetry(body)
+        body, telemetry = parse_comment_telemetry(body)
         parsed.update(telemetry)
 
         # parse DAO extention
-        body = _parse_dao(body, parsed)
+        body = parse_dao(body, parsed)
 
         # rest is a comment
         parsed.update({'comment': body.strip(' ')})

@@ -2,8 +2,8 @@ import re
 from aprslib.exceptions import ParseError
 
 __all__ = [
-    '_parse_weather',
-    '_parse_weather_data',
+    'parse_weather',
+    'parse_weather_data',
     ]
 
 # constants
@@ -41,7 +41,7 @@ val_map = {
     '#': lambda x: int(x),
 }
 
-def _parse_weather_data(body):
+def parse_weather_data(body):
     parsed = {}
 
     # parse weather data
@@ -58,12 +58,12 @@ def _parse_weather_data(body):
 
     return (body, parsed)
 
-def _parse_weather(body):
+def parse_weather(body):
     match = re.match("^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
     if not match:
         raise ParseError("invalid positionless weather report format")
 
-    comment, weather = _parse_weather_data(body[8:])
+    comment, weather = parse_weather_data(body[8:])
 
     parsed = {
         'format': 'wx',

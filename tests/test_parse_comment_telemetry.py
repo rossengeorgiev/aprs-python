@@ -1,6 +1,6 @@
 import unittest2 as unittest
 
-from aprslib.parsing import _parse_comment_telemetry
+from aprslib.parsing import parse_comment_telemetry
 from aprslib import base91
 from random import randint
 
@@ -52,7 +52,7 @@ class ParseCommentTelemetry(unittest.TestCase):
 
             testData = self.genTelem(i, vals, bits)
 
-            extra, resData = _parse_comment_telemetry(self.telemString(testData))
+            extra, resData = parse_comment_telemetry(self.telemString(testData))
             resData = resData['telemetry']
 
             # clean up extra data, so we can compare
@@ -79,7 +79,7 @@ class ParseCommentTelemetry(unittest.TestCase):
             ]
 
         for datum in testData:
-            extra, telem = _parse_comment_telemetry("".join(datum))
+            extra, telem = parse_comment_telemetry("".join(datum))
 
             self.assertEqual(datum[0]+datum[2], extra)
 
@@ -107,12 +107,12 @@ class ParseCommentTelemetry(unittest.TestCase):
             ]
 
         for datum in testData:
-            extra, telem = _parse_comment_telemetry(datum)
+            extra, telem = parse_comment_telemetry(datum)
 
             self.assertEqual(datum, extra)
 
     def test_output_format(self):
-        parsedOutput = _parse_comment_telemetry("|aabb|")
+        parsedOutput = parse_comment_telemetry("|aabb|")
 
         self.assertTrue(isinstance(parsedOutput, tuple))
         self.assertTrue(len(parsedOutput) == 2)

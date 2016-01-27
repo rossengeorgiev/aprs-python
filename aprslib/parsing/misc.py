@@ -1,11 +1,11 @@
 import re
 from aprslib.exceptions import ParseError
-from aprslib.parsing.common import _parse_timestamp
+from aprslib.parsing.common import parse_timestamp
 
 __all__ = [
-        '_parse_status',
-        '_parse_invalid',
-        '_parse_user_defined',
+        'parse_status',
+        'parse_invalid',
+        'parse_user_defined',
         ]
 
 
@@ -13,8 +13,8 @@ __all__ = [
 #
 # >DDHHMMzComments
 # >Comments
-def _parse_status(packet_type, body):
-    body, result = _parse_timestamp(body, packet_type)
+def parse_status(packet_type, body):
+    body, result = parse_timestamp(body, packet_type)
 
     result.update({
         'format': 'status',
@@ -27,7 +27,7 @@ def _parse_status(packet_type, body):
 # INVALID
 #
 # ,.........................
-def _parse_invalid(body):
+def parse_invalid(body):
     return ('', {
         'format': 'invalid',
         'body': body
@@ -38,7 +38,7 @@ def _parse_invalid(body):
 #
 # {A1................
 # {{.................
-def _parse_user_defined(body):
+def parse_user_defined(body):
     return ('', {
         'format': 'user-defined',
         'id': body[0],

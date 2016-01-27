@@ -4,12 +4,12 @@ from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
 
 __all__ = [
-        '_parse_comment_telemetry',
-        '_parse_telemetry_config',
+        'parse_comment_telemetry',
+        'parse_telemetry_config',
         ]
 
 
-def _parse_comment_telemetry(text):
+def parse_comment_telemetry(text):
     """
     Looks for base91 telemetry found in comment field
     Returns [remaining_text, telemetry]
@@ -40,7 +40,7 @@ def _parse_comment_telemetry(text):
     return (text, parsed)
 
 
-def _parse_telemetry_config(body):
+def parse_telemetry_config(body):
     parsed = {}
 
     match = re.findall(r"^(PARM|UNIT|EQNS|BITS)\.(.*)$", body)

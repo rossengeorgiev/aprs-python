@@ -1,5 +1,5 @@
 from aprslib import parse
-from aprslib.parsing.common import _parse_header
+from aprslib.parsing.common import parse_header
 
 class APRSPacket(object):
     format = 'raw'
@@ -42,7 +42,7 @@ class APRSPacket(object):
         if not isinstance(obj, dict):
             if self.format == 'raw':
                 header, self.body = obj.split(":", 1)
-                obj = _parse_header(header)
+                obj = parse_header(header)
             else:
                 obj = parse(obj)
 

@@ -98,7 +98,7 @@ def parse(packet):
 
     # parse head
     try:
-        parsed.update(_parse_header(head))
+        parsed.update(parse_header(head))
     except ParseError as msg:
         raise ParseError(str(msg), packet)
 
@@ -111,7 +111,7 @@ def parse(packet):
 
     # attempt to parse the body
     try:
-        _try_to_parse_body(packet_type, body, parsed)
+        _try_toparse_body(packet_type, body, parsed)
 
     # capture ParseErrors and attach the packet
     except (UnknownFormat, ParseError) as exp:
@@ -135,7 +135,7 @@ def parse(packet):
     return parsed
 
 
-def _try_to_parse_body(packet_type, body, parsed):
+def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
     # NOT SUPPORTED FORMATS
@@ -165,43 +165,43 @@ def _try_to_parse_body(packet_type, body, parsed):
     elif packet_type == ',':
         logger.debug("Packet is invalid format")
 
-        body, result = _parse_invalid(body)
+        body, result = parse_invalid(body)
 
     # user defined
     elif packet_type == '{':
         logger.debug("Packet is user-defined")
 
-        body, result = _parse_user_defined(body)
+        body, result = parse_user_defined(body)
 
     # Status report
     elif packet_type == '>':
         logger.debug("Packet is just a status message")
 
-        body, result = _parse_status(packet_type, body)
+        body, result = parse_status(packet_type, body)
 
     # Mic-encoded packet
     elif packet_type in "`'":
         logger.debug("Attempting to parse as mic-e packet")
 
-        body, result = _parse_mice(parsed['to'], body)
+        body, result = parse_mice(parsed['to'], body)
 
     # Message packet
     elif packet_type == ':':
         logger.debug("Attempting to parse as message packet")
 
-        body, result = _parse_message(body)
+        body, result = parse_message(body)
 
     # Positionless weather report
     elif packet_type == '_':
         logger.debug("Attempting to parse as positionless weather report")
 
-        body, result = _parse_weather(body)
+        body, result = parse_weather(body)
 
     # postion report (regular or compressed)
     elif (packet_type in '!=/@;' or
           0 <= body.find('!') < 40):  # page 28 of spec (PDF)
 
-        body, result = _parse_position(packet_type, body)
+        body, result = parse_position(packet_type, body)
 
     # we are done
     parsed.update(result)
