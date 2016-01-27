@@ -1,9 +1,10 @@
 import unittest2 as unittest
 import string
 from random import randint, randrange, sample
+from datetime import datetime
 
-from aprslib.parsing import parse_header
-from aprslib.parsing import validate_callsign
+from aprslib import base91
+from aprslib.parsing.common import *
 from aprslib.exceptions import ParseError
 
 
@@ -47,6 +48,10 @@ class ValidateCallsign(unittest.TestCase):
 
 
 class ParseHeader(unittest.TestCase):
+    def test_no_tocall(self):
+        with self.assertRaises(ParseError):
+            parse_header("AAA>")
+            parse_header("AAA>,")
 
     def testvalid_input_and_format(self):
         # empty path header
@@ -151,5 +156,276 @@ class ParseHeader(unittest.TestCase):
                 continue
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TimestampTC(unittest.TestCase):
+    def test_timestamp_invalid(self):
+        body = "000000ntext"
+        remaining, parsed = parse_timestamp(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'timestamp': 0,
+            'raw_timestamp': '000000n',
+            })
+
+    def test_status_timestamp_invalid(self):
+        body = "000000htext"
+        remaining, parsed = parse_timestamp(body, '>')
+
+        self.assertEqual(remaining, body)
+        self.assertEqual(parsed, {
+            'timestamp': 0,
+            'raw_timestamp': '000000h',
+            })
+
+    def test_timestamp_valid(self):
+        timestamp = 1453891611
+        date = datetime.utcfromtimestamp(timestamp)
+
+        # hhmmss format
+        body = date.strftime("%H%M%Shtext")
+        remaining, parsed = parse_timestamp(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'timestamp': timestamp,
+            'raw_timestamp': body[:7],
+            })
+
+        # ddhhmm format
+        body = date.strftime("%d%H%Mztext")
+        remaining, parsed = parse_timestamp(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'timestamp': timestamp - date.second,
+            'raw_timestamp': body[:7],
+            })
+
+        # ddhhmm format, local time, we parse as zulu
+        body = date.strftime("%d%H%M/text")
+        remaining, parsed = parse_timestamp(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'timestamp': timestamp - date.second,
+            'raw_timestamp': body[:7],
+            })
+
+    def test_invalid_date(self):
+        body = "999999ztext"
+
+        remaining, parsed = parse_timestamp(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'timestamp': 0,
+            'raw_timestamp': '999999z',
+            })
+
+
+class CommentTC(unittest.TestCase):
+    def test_comment(self):
+        body = "test body"
+        parsed = {}
+        parse_comment(body, parsed)
+
+        self.assertEqual(parsed, {'comment': body})
+
+        body = "/test body"
+        parsed = {}
+        parse_comment(body, parsed)
+
+        self.assertEqual(parsed, {'comment': body[1:]})
+
+        body = "  test body     "
+        parsed = {}
+        parse_comment(body, parsed)
+
+        self.assertEqual(parsed, {'comment': body.strip(' ')})
+
+
+class DataExtentionsTC(unittest.TestCase):
+    def test_course_speed(self):
+        body = "123/100/text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '/text')
+        self.assertEqual(parsed, {
+            'course': 123,
+            'speed': 100*1.852,
+            })
+
+    def test_empty_course_speed(self):
+        body = "   /   /text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '/text')
+        self.assertEqual(parsed, {
+            'course': 0,
+            'speed': 0,
+            })
+
+        body = ".../.../text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '/text')
+        self.assertEqual(parsed, {
+            'course': 0,
+            'speed': 0,
+            })
+
+    def test_course_speed_bearing_nrq(self):
+        body = "123/100/234/345text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'course': 123,
+            'speed': 100*1.852,
+            'bearing': 234,
+            'nrq': 345,
+            })
+
+    def test_PHG(self):
+        body = "PHG1234Atext"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'phg': '1234A',
+            })
+
+        body = "PHG1234text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'phg': '1234',
+            })
+
+    def test_range(self):
+        body = "RNG1000text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'rng': 1000*1.609344,
+            })
+
+
+
+class CommentAltitudeTC(unittest.TestCase):
+    def test_valid_inputs(self):
+        body = "asdasd/A=10000078zxc"
+        remaining, parsed = parse_comment_altitude(body)
+
+        self.assertEqual(remaining, "asdasd78zxc")
+        self.assertEqual(parsed, {'altitude': 30480})
+
+        body = "asdasd/A=-1000078zxc"
+        remaining, parsed = parse_comment_altitude(body)
+
+        self.assertEqual(remaining, "asdasd78zxc")
+        self.assertEqual(parsed, {'altitude': -3048})
+
+    def test_invalid(self):
+        tests = [
+            "",
+            "aaaaaaaaaaaaaaaaaaaaa",
+            "sdfsdfsdf/A=00000aaaa",
+            "sdfsdfsdf/A=0000aaaaa",
+            "sdfsdfsdf/A=000aaaaaa",
+            "sdfsdfsdf/A=00aaaaaaa",
+            "sdfsdfsdf/A=0aaaaaaaa",
+            "sdfsdfsdf/A=aaaaaaaaa",
+            "sdfsdfsdf/Aa000000aaa",
+            "sdfsdfsdf/A=+00000aaa",
+            "sdfsdfsdf/A=00a000aaa",
+            ]
+
+        for body in tests:
+            remaining, parsed = parse_comment_altitude(body)
+            self.assertEqual(remaining, body)
+            self.assertEqual(parsed, {})
+
+
+class DAO_TC(unittest.TestCase):
+    def test_wgs84_human_readable(self):
+        body = "!W36!"
+        parsed = {'latitude': 0, 'longitude': 0}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, '')
+        self.assertEqual(parsed, {
+            'daodatumbyte': 'W',
+            'latitude': 0.00005,
+            'longitude': 0.0001,
+            })
+
+    def test_wgs84_human_readable_nagarive(self):
+        body = "!W36!"
+        parsed = {'latitude': -1, 'longitude': -1}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, '')
+        self.assertEqual(parsed, {
+            'daodatumbyte': 'W',
+            'latitude': -1.00005,
+            'longitude': -1.0001,
+            })
+
+    def test_wgs84_human_readable_blank(self):
+        body = "!W  !"
+        parsed = {'latitude': 1, 'longitude': 2}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, '')
+        self.assertEqual(parsed, {
+            'daodatumbyte': 'W',
+            'latitude': 1,
+            'longitude': 2,
+            })
+
+    def test_wgs84_base91(self):
+        body = "!w??!"
+        parsed = {'latitude': 0, 'longitude': 0}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, '')
+        self.assertEqual(parsed, {
+            'daodatumbyte': 'W',
+            'latitude': 5.4945054945054945e-05,
+            'longitude': 5.4945054945054945e-05,
+            })
+
+    def test_wgs84_base91_blank(self):
+        body = "!w  !"
+        parsed = {'latitude': 1, 'longitude': 2}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, '')
+        self.assertEqual(parsed, {
+            'daodatumbyte': 'W',
+            'latitude': 1,
+            'longitude': 2,
+            })
+
+    def test_dao_matching(self):
+        body = "aaa!W12!bbb!W23!ccc!W45!ddd"
+        parsed = {'latitude': 0, 'longitude': 0}
+        remaining = parse_dao(body, parsed)
+
+        self.assertEqual(remaining, 'aaa!W12!bbb!W23!cccddd')
+
+    def test_other_datum_bytes(self):
+        for datum in [chr(x) for x in range(0x21,0x7c)]:
+            body = "!" + datum + "  !"
+            parsed = {'latitude': 1, 'longitude': 2}
+            remaining = parse_dao(body, parsed)
+
+            self.assertEqual(remaining, '')
+            self.assertEqual(parsed, {
+                'daodatumbyte': datum.upper(),
+                'latitude': 1,
+                'longitude': 2,
+                })
