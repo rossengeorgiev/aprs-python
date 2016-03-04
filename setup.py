@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
@@ -31,7 +31,7 @@ setup(
     ],
     test_suite='tests',
     keywords='aprs aprslib parse parsing aprs-is library base91',
-    packages=['aprslib'],
+    packages=['aprslib'] + ['aprslib.'+x for x in find_packages(where='aprslib')],
     install_requires=[],
     zip_safe=True,
 )
