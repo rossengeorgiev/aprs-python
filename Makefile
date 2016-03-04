@@ -27,7 +27,11 @@ test:
 pylint:
 	pylint -r n -f colorized aprslib || true
 
-build: pylint test
+build: pylint test docs
+
+.FORCE:
+docs: .FORCE
+	$(MAKE) -C docs html
 
 clean:
 	rm -rf dist aprs.egg-info aprslib/*.pyc test/*.pyc .coverage
