@@ -51,7 +51,7 @@ def parse_telemetry_config(body):
         parsed.update({'format': 'telemetry-message'})
 
         if form in ["PARM", "UNIT"]:
-            vals = body.split(',')[:13]
+            vals = body.rstrip().split(',')[:13]
 
             for val in vals:
                 if not re.match(r"^(.{1,20}|)$", val):
@@ -64,7 +64,7 @@ def parse_telemetry_config(body):
                 't%s' % form: defvals
                 })
         elif form == "EQNS":
-            eqns = body.split(',')[:15]
+            eqns = body.rstrip().split(',')[:15]
             teqns = [0, 1, 0] * 5
 
             for idx, val in enumerate(eqns):
@@ -85,7 +85,7 @@ def parse_telemetry_config(body):
                 't%s' % form: teqns
                 })
         elif form == "BITS":
-            match = re.findall(r"^([01]{8}),(.{0,23})$", body)
+            match = re.findall(r"^([01]{8}),(.{0,23})$", body.rstrip())
             if not match:
                 raise ParseError("incorrect format of %s (title too long?)" % form)
 
