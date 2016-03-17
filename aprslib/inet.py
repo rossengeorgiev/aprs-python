@@ -57,7 +57,7 @@ class IS(object):
         Host & port     - aprs-is server
         """
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
         self._parse = parse
 
         self.set_server(host, port)
