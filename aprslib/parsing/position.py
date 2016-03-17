@@ -41,7 +41,7 @@ def parse_position(packet_type, body):
         parsed.update(result)
 
     if len(body) == 0 and 'timestamp' in parsed:
-        raise ParseError("invalid position report format", packet)
+        raise ParseError("invalid position report format")
 
     # decode body
     body, result = parse_compressed(body)
