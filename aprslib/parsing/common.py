@@ -134,21 +134,23 @@ def parse_comment(body, parsed):
 
 def parse_data_extentions(body):
     parsed = {}
-    match = re.findall(r"^([0-9 \.]{3})/([0-9 \.]{3})", body)
+    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
 
     if match:
         cse, spd = match[0]
         body = body[7:]
-        parsed.update({
-            'course': int(cse) if cse.strip(' .') != '' else 0,
-            'speed': int(spd)*1.852  if spd.strip(' .') != '' else 0,
-            })
+        parsed.update({'course': int(cse) if cse.isdigit() and 1 <= int(cse) <= 360 else 0})
+        if spd.isdigit():
+            parsed.update({'speed': int(spd)*1.852})
 
-        match = re.findall(r"^/([0-9]{3})/([0-9]{3})", body)
+        match = re.findall(r"^/([0-9 .]{3})/([0-9 .]{3})", body)
         if match:
             brg, nrq = match[0]
             body = body[8:]
-            parsed.update({'bearing': int(brg), 'nrq': int(nrq)})
+            if brg.isdigit():
+                parsed.update({'bearing': int(brg)})
+            if nrq.isdigit():
+                parsed.update({'nrq': int(nrq)})
     else:
         match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?))", body)
         if match:
