@@ -16,7 +16,7 @@ To install the latest release from ``pypi``::
 
     pip install aprslib
 
-To install the latest dev version from the `Github repo <https://github.com/rossengeorgiev/aprs-python://github.com/rossengeorgiev/aprs-python/>`_::
+To install the latest dev version from the `Github repo <https://github.com/rossengeorgiev/aprs-python/>`_::
 
     pip install git+https://github.com/rossengeorgiev/aprs-python
 
