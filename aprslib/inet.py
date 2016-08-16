@@ -111,7 +111,7 @@ class IS(object):
         while True:
             try:
                 self._connect()
-                if self.skip_login:
+                if not self.skip_login:
                     self._send_login()
                 break
             except (LoginError, ConnectionError):
