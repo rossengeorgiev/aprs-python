@@ -2,7 +2,6 @@ import unittest2 as unittest
 import string
 from random import randint, randrange, sample
 from datetime import datetime
-import time
 
 from aprslib import base91
 from aprslib.parsing.common import *
@@ -180,7 +179,7 @@ class TimestampTC(unittest.TestCase):
 
     def test_timestamp_valid(self):
         date = datetime.utcnow()
-        timestamp = time.mktime(date.timetuple())
+        timestamp = int((date - datetime(1970, 1, 1)).total_seconds())
 
         # hhmmss format
         body = date.strftime("%H%M%Shtext")

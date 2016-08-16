@@ -1,5 +1,4 @@
 import re
-import time
 from datetime import datetime
 from aprslib import base91
 from aprslib.exceptions import ParseError
@@ -100,8 +99,7 @@ def parse_timestamp(body, packet_type=''):
                 else:
                     timestamp = "19700101000000"
 
-                timestamp = utc.strptime(timestamp, "%Y%m%d%H%M%S")
-                timestamp = time.mktime(timestamp.timetuple())
+                timestamp = int((utc.strptime(timestamp, "%Y%m%d%H%M%S") - datetime(1970, 1, 1)).total_seconds())
             except Exception as exp:
                 timestamp = 0
                 logger.debug(exp)
