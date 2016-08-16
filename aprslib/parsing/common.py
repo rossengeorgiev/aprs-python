@@ -99,7 +99,8 @@ def parse_timestamp(body, packet_type=''):
                 else:
                     timestamp = "19700101000000"
 
-                timestamp = int((utc.strptime(timestamp, "%Y%m%d%H%M%S") - datetime(1970, 1, 1)).total_seconds())
+                td = utc.strptime(timestamp, "%Y%m%d%H%M%S") - datetime(1970, 1, 1)
+                timestamp = int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6)
             except Exception as exp:
                 timestamp = 0
                 logger.debug(exp)

@@ -179,7 +179,8 @@ class TimestampTC(unittest.TestCase):
 
     def test_timestamp_valid(self):
         date = datetime.utcnow()
-        timestamp = int((date - datetime(1970, 1, 1)).total_seconds())
+        td = date - datetime(1970, 1, 1)
+        timestamp = int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6)
 
         # hhmmss format
         body = date.strftime("%H%M%Shtext")
