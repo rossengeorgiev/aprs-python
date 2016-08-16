@@ -50,7 +50,7 @@ class IS(object):
     Note: sending of packets is not supported yet
 
     """
-    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152):
+    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152, skip_login=False):
         """
         callsign        - used when login in
         passwd          - for verification, or "-1" if only listening
@@ -61,7 +61,7 @@ class IS(object):
         self._parse = parse
 
         self.set_server(host, port)
-        self.set_login(callsign, passwd)
+        self.set_login(callsign, passwd, skip_login)
 
         self.sock = None
         self.filter = ""  # default filter, everything
@@ -85,12 +85,11 @@ class IS(object):
         if self._connected:
             self._sendall("#filter %s\r\n" % self.filter)
 
-    def set_login(self, callsign, passwd):
+    def set_login(self, callsign, passwd="-1", skip_login=False):
         """
         Set callsign and password
         """
-        self.callsign = callsign
-        self.passwd = passwd
+        self.__dict__.update(locals())
 
     def set_server(self, host, port):
         """
@@ -112,7 +111,8 @@ class IS(object):
         while True:
             try:
                 self._connect()
-                self._send_login()
+                if self.skip_login:
+                    self._send_login()
                 break
             except (LoginError, ConnectionError):
                 if not blocking:
