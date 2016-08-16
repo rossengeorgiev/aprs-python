@@ -1,13 +1,13 @@
 APRS library for Python
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-|pypi| |coverage| |scru| |master_build|
+|pypi| |coverage| |scru| |master_build| |docs|
 
 A python library for dealing with APRS.
 It can be used to interact with APRS-IS servers, sending and receiving.
 Parsing functionally is also included, but currently doesn't implement the full spec.
 
-See `full documentation <http://rgp.io/aprs-python/>`_.
+See `the documentation <http://aprs-python.readthedocs.io/en/latest/>`_.
 
 Installation
 ============
@@ -16,7 +16,7 @@ To install the latest release from ``pypi``::
 
     pip install aprslib
 
-To install the latest dev version from the `Github repo <https://github.com/rossengeorgiev/aprs-python://github.com/rossengeorgiev/aprs-python/>`_::
+To install the latest dev version from the `Github repo <https://github.com/rossengeorgiev/aprs-python/>`_::
 
     pip install git+https://github.com/rossengeorgiev/aprs-python
 
@@ -44,3 +44,6 @@ Contribution
     :target: http://travis-ci.org/rossengeorgiev/aprs-python
     :alt: Build status of master branch
 
+.. |docs| image:: https://readthedocs.org/projects/aprs-python/badge/?version=latest
+    :target: http://aprs-python.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation status

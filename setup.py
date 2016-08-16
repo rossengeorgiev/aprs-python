@@ -8,7 +8,10 @@ from aprslib import __version__ as lib_version
 
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+    long_description = f.read()\
+                        .replace('.io/en/latest/', '.io/en/stable/')\
+                        .replace('?badge=latest', '?badge=stable')\
+                        .replace('projects/aprs-python/badge/?version=latest', 'projects/aprs-python/badge/?version=stable')
 
 setup(
     name='aprslib',
