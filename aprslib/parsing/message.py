@@ -73,7 +73,7 @@ def parse_message(body):
             logger.debug("Packet is just a regular message")
             parsed.update({'format': 'message'})
 
-            match = re.findall(r"^(ack|rej)\{([0-9]{1,5})$", body)
+            match = re.findall(r"^(ack|rej)([0-9]{1,5})$", body)
             if match:
                 response, number = match[0]
 
@@ -84,7 +84,7 @@ def parse_message(body):
             else:
                 body = body[0:70]
 
-                match = re.findall(r"\{([0-9]{1,5})$", body)
+                match = re.findall(r"([0-9]{1,5})$", body)
                 if match:
                     msgid = match[0]
                     body = body[:len(body) - 1 - len(msgid)]
