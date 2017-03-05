@@ -118,7 +118,7 @@ The method assumes a single line/packet per call. The parameters may end with ``
     import aprslib
 
     # a valid passcode for the callsign is required in order to send
-    AIS = aprslib.IS("N0CALL", passcode="123456", port=14580)
+    AIS = aprslib.IS("N0CALL", passwd="123456", port=14580)
     AIS.connect()
     # send a single status message
     AIS.sendall("N0CALL>APRS,TCPIP*:>status text")
