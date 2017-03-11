@@ -16,7 +16,6 @@ class TelemetryUnitLabelsReport(APRSPacket):
     b6 = "EN"
     b7 = "EN"
     b8 = "EN"
-    comment = ''
 
     def _serialize_body(self):
 
@@ -40,4 +39,5 @@ class TelemetryUnitLabelsReport(APRSPacket):
         badcomma = tmpbody.index(",")
 
         # remove static but erroneous comma between UNIT. and a1 value
+        # Position can vary due to callsign
         return tmpbody[:badcomma] + tmpbody[badcomma+1:]
