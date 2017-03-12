@@ -4,7 +4,7 @@ class TelemetryEquationsReport(APRSPacket):
     format = 'raw'
     telemetrystation = "N0CALL"
     a1a = "0.0"
-    a1b = "9999.0"
+    a1b = "1.0"
     a1c = "0.0"
     a2a = "0.0"
     a2b = "1.0"
