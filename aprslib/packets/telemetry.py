@@ -4,7 +4,7 @@ class TelemetryReport(APRSPacket):
     format = 'raw'
     telemetry = dict(seq=0,
                      vals=['0']*6)
-    telemetry['vals'][5] = ['1']*8
+    telemetry['vals'][5] = ['1']*8  # Replace io data with list of 8 values
     comment = ''
 
     def _serialize_body(self):
