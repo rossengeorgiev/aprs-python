@@ -12,7 +12,6 @@ class TelemetryReport(APRSPacket):
         tempio = ''.join(self.telemetry['vals'][5])
 
         body = [
-            'T#',  # packet type
             str(self.telemetry['seq']).zfill(3),
             str(self.telemetry['vals'][0]).zfill(3),
             str(self.telemetry['vals'][1]).zfill(3),
@@ -22,7 +21,5 @@ class TelemetryReport(APRSPacket):
             str(tempio),
             self.comment,
         ]
-        tmpbody = ",".join(body)
-
-        # remove static but erroneous comma between T# and sequenceno
-        return tmpbody[:2] + tmpbody[3:]
+        # Add packet type to body joined by commas
+        return 'T#' + ",".join(body)
