@@ -1,14 +1,27 @@
 from aprslib.packets.base import APRSPacket
 
 class TelemetryAddon(object):
-    analog_values = None
+    _analog_values = None
     _sequence_number = 0
     _digital_value = 0
 
+
     def __init__(self, *args, **kwargs):
+        self._analog_values = AnalogList()
         super(TelemetryAddon, self).__init__( *args, **kwargs)
 
-        self. analog_values = AnalogList()
+    @property
+    def analog_values(self):
+        return self._analog_values
+
+    @analog_values.setter
+    def analog_values(self, v):
+        if not isinstance(v, list):
+            raise TypeError("Expected analog_values to be list, got %s" % type(v))
+        if len(v) != 5:
+            raise ValueError("Expected a list of 5 elements, got a list of %d" % len(v))
+
+        self._analog_values[:] = v
 
     @property
     def sequence_number(self):
@@ -48,32 +61,30 @@ class AnalogList(list):
     def __setslice__(self, i, j, v):
         if i > j:
             i, j = j, i
-        if (not 0 <= i <= 5) or (not 0 <= j <= 5):
-            raise IndexError("Slice outside of range [0:5], got %s" % [i, j])
 
-        for x in range(i, j):
+        for x in range(max(0, i), min(5, j)):
             list.__setitem__(self, x, v[x])
 
-    def append(self, other):
+    def append(self, a):
         raise NotImplementedError("not supported")
 
-    def remove(self, other):
+    def remove(self, a):
         raise NotImplementedError("not supported")
 
-    def pop(self):
+    def pop(self, a):
         raise NotImplementedError("not supported")
 
-    def extend(self):
+    def extend(self, a):
         raise NotImplementedError("not supported")
 
-    def insert(self):
+    def insert(self, a, b):
         raise NotImplementedError("not supported")
 
 
 class TelemetryReport(TelemetryAddon, APRSPacket):
     @property
     def format(self):
-        return 'raw'
+        return 'telemetry'
 
     _comment = ''
 

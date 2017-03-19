@@ -152,13 +152,12 @@ def _try_toparse_body(packet_type, body, parsed):
     # . - reserved
     # < - station capabilities
     # ? - general query format
-    # T - telemetry report
     # [ - maidenhead locator beacon
     # \ - unused
     # ] - unused
     # ^ - unused
     # } - 3rd party traffic
-    if packet_type in '#$%)*<?T[}':
+    if packet_type in '#$%)*<?[}':
         raise UnknownFormat("format is not supported")
 
     # user defined
@@ -196,6 +195,12 @@ def _try_toparse_body(packet_type, body, parsed):
         logger.debug("Attempting to parse as positionless weather report")
 
         body, result = parse_weather(body)
+
+    # Telemetry Report
+    elif packet_type == 'T':
+        logger.debug("Attempting to parse as telemetry report")
+
+        body, result = parse_telemetry(body)
 
     # postion report (regular or compressed)
     elif (packet_type in '!=/@;' or

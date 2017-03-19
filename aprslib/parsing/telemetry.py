@@ -4,9 +4,30 @@ from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
 
 __all__ = [
+        'parse_telemetry',
         'parse_comment_telemetry',
         'parse_telemetry_config',
         ]
+
+
+def parse_telemetry(body):
+    parsed = {}
+
+    match = re.match(r'#(\d{3},|MIC,?)(\d{3}),(\d{3}),(\d{3}),(\d{3}),(\d{3}),([0-1]{8})(.*)', body, flags=re.I)
+
+    if not match:
+        raise ParseError("Invalid telemetry format")
+
+    data = match.groups()
+
+    parsed.update({
+        'format': 'telemetry',
+        'sequence_number': 0 if data[0].lower().startswith('mic') else int(data[0][:3]),
+        'analog_values': list(map(int, data[1:6])),
+        'digital_value': int(data[6], 2)
+        })
+
+    return '', parsed
 
 
 def parse_comment_telemetry(text):
