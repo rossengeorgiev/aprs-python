@@ -5,9 +5,11 @@ class APRSPacket(object):
     format = 'raw'
     fromcall = 'N0CALL'
     tocall = 'N0CALL'
-    path = []
+    path = None
 
     def __init__(self, data=None):
+        self.path = []
+
         if data:
             self.load(data)
 

@@ -1,2 +1,2 @@
-from aprslib.packets.position import PositionReport
-from aprslib.packets.telemetry import TelemetryReport
+from aprslib.packets.position import *
+from aprslib.packets.telemetry import *

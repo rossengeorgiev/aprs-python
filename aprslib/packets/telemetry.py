@@ -1,5 +1,9 @@
 from aprslib.packets.base import APRSPacket
 
+__all__ = [
+    'TelemetryReport',
+]
+
 class TelemetryAddon(object):
     _analog_values = None
     _sequence_number = 0
@@ -7,7 +11,7 @@ class TelemetryAddon(object):
 
 
     def __init__(self, *args, **kwargs):
-        self._analog_values = AnalogList()
+        self._analog_values = AnalogValueList()
         super(TelemetryAddon, self).__init__( *args, **kwargs)
 
     @property
@@ -21,7 +25,8 @@ class TelemetryAddon(object):
         if len(v) != 5:
             raise ValueError("Expected a list of 5 elements, got a list of %d" % len(v))
 
-        self._analog_values[:] = v
+        for i, elm in enumerate(v):
+            self._analog_values[i] = elm
 
     @property
     def sequence_number(self):
@@ -46,24 +51,12 @@ class TelemetryAddon(object):
             raise ValueError("Value outside of range 0-255")
 
 
-class AnalogList(list):
-    def __init__(self):
-        list.__init__(self, [0] * 5)
+class ImmutableList(list):
+    def __setitem__(self, a, b):
+        raise NotImplementedError("not supported")
 
-    def __setitem__(self, i, v):
-        if not 0 <= i <= 4:
-            raise IndexError("Index outside of range 0-4, got %d" % i)
-        if not 0 <= v <= 999:
-            raise ValueError("Value outside of range 0-999, got %d" % v)
-        else:
-            list.__setitem__(self, i, v)
-
-    def __setslice__(self, i, j, v):
-        if i > j:
-            i, j = j, i
-
-        for x in range(max(0, i), min(5, j)):
-            list.__setitem__(self, x, v[x])
+    def __setslice__(self, a, b, c):
+        raise NotImplementedError("not supported")
 
     def append(self, a):
         raise NotImplementedError("not supported")
@@ -81,11 +74,21 @@ class AnalogList(list):
         raise NotImplementedError("not supported")
 
 
-class TelemetryReport(TelemetryAddon, APRSPacket):
-    @property
-    def format(self):
-        return 'telemetry'
+class AnalogValueList(ImmutableList):
+    def __init__(self):
+        list.__init__(self, [0] * 5)
 
+    def __setitem__(self, i, v):
+        if not 0 <= i <= 4:
+            raise IndexError("Index outside of range 0-4, got %d" % i)
+        if not 0 <= v <= 999:
+            raise ValueError("Value outside of range 0-999, got %d" % v)
+        else:
+            list.__setitem__(self, i, v)
+
+
+class TelemetryReport(TelemetryAddon, APRSPacket):
+    format = 'telemetry'
     _comment = ''
 
     @property

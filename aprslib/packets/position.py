@@ -2,6 +2,10 @@ from datetime import datetime
 from aprslib.packets.base import APRSPacket
 from aprslib.util import latitude_to_ddm, longitude_to_ddm, comment_altitude
 
+__all__ = [
+    'PositionReport',
+]
+
 
 class PositionReport(APRSPacket):
     format = 'uncompressed'
