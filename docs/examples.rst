@@ -55,7 +55,7 @@ Connecting to APRS-IS is done using the :py:class:`aprslib.IS` module.
     import aprslib
 
     def callback(packet):
-        print packet
+        print(packet)
 
     AIS = aprslib.IS("N0CALL")
     AIS.connect()
