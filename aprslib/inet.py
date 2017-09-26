@@ -178,9 +178,9 @@ class IS(object):
         while True:
             try:
                 for line in self._socket_readlines(blocking):
-                    if line[0] != "#":
+                    if line[0].decode('UTF-8') != "#":
                         if raw:
-                            callback(line)
+                            callback(line.decode('UTF-8'))
                         else:
                             callback(self._parse(line))
                     else:
