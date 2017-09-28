@@ -173,18 +173,18 @@ class IS(object):
         if not self._connected:
             raise ConnectionError("not connected to a server")
 
-        line = ''
+        line = b''
 
         while True:
             try:
                 for line in self._socket_readlines(blocking):
-                    if line[0] != "#":
+                    if line[0:1] != b'#':
                         if raw:
                             callback(line)
                         else:
                             callback(self._parse(line))
                     else:
-                        self.logger.debug("Server: %s", line)
+                        self.logger.debug("Server: %s", line.decode('utf8'))
             except ParseError as exp:
                 self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
             except UnknownFormat as exp:

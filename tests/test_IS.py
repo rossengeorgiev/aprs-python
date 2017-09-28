@@ -338,32 +338,32 @@ class TC_IS_consumer(unittest.TestCase):
             self.ais.consumer(callback=lambda: None, blocking=False)
 
     def test_consumer_raw(self):
-        self.ais._socket_readlines(False).AndReturn(["line1"])
+        self.ais._socket_readlines(False).AndReturn([b"line1"])
         self.m.ReplayAll()
 
         def testcallback(line):
-            self.assertEqual(line, "line1")
+            self.assertEqual(line, b"line1")
 
         self.ais.consumer(callback=testcallback, blocking=False, raw=True)
 
         self.m.VerifyAll()
 
     def test_consumer_blocking(self):
-        self.ais._socket_readlines(True).AndReturn(["line1"])
-        self.ais._socket_readlines(True).AndReturn(["line1"] * 5)
+        self.ais._socket_readlines(True).AndReturn([b"line1"])
+        self.ais._socket_readlines(True).AndReturn([b"line1"] * 5)
         self.ais._socket_readlines(True).AndRaise(StopIteration)
         self.m.ReplayAll()
 
         def testcallback(line):
-            self.assertEqual(line, "line1")
+            self.assertEqual(line, b"line1")
 
         self.ais.consumer(callback=testcallback, blocking=True, raw=True)
 
         self.m.VerifyAll()
 
     def test_consumer_parsed(self):
-        self.ais._socket_readlines(False).AndReturn(["line1"])
-        self.ais._parse("line1").AndReturn([])
+        self.ais._socket_readlines(False).AndReturn([b"line1"])
+        self.ais._parse(b"line1").AndReturn([])
         self.m.ReplayAll()
 
         def testcallback(line):
@@ -374,7 +374,7 @@ class TC_IS_consumer(unittest.TestCase):
         self.m.VerifyAll()
 
     def test_consumer_serverline(self):
-        self.ais._socket_readlines(False).AndReturn(["# serverline"])
+        self.ais._socket_readlines(False).AndReturn([b"# serverline"])
         self.m.ReplayAll()
 
         def testcallback(line):
