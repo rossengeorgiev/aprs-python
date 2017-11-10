@@ -30,7 +30,7 @@ class APRSPacket(object):
         header = "%s>%s" % (self.fromcall, self.tocall)
 
         if self.path:
-            header += "," + ",".join(self.path)
+            header += "," + self.path
 
         return header
 
