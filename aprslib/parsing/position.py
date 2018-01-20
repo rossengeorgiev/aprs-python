@@ -171,15 +171,15 @@ def parse_normal(body):
         if int(lat_deg) > 89 or int(lat_deg) < 0:
             raise ParseError("latitude is out of range (0-90 degrees)")
         if int(lon_deg) > 179 or int(lon_deg) < 0:
-            raise ParseError("longitutde is out of range (0-180 degrees)")
+            raise ParseError("longitude is out of range (0-180 degrees)")
         """
         f float(lat_min) >= 60:
             raise ParseError("latitude minutes are out of range (0-60)")
         if float(lon_min) >= 60:
             raise ParseError("longitude minutes are out of range (0-60)")
 
-        the above is commented out intentionally
-        apperantly aprs.fi doesn't bound check minutes
+        The above is commented out intentionally
+        apparently aprs.fi doesn't bound check minutes
         and there are actual packets that have >60min
         i don't even know why that's the case
         """
