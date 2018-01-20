@@ -73,27 +73,24 @@ def parse_message(body):
             logger.debug("Packet is just a regular message")
             parsed.update({'format': 'message'})
 
-            match = re.findall(r"^(ack|rej)([0-9]{1,5})$", body)
+            match = re.search(r"^(ack|rej)([A-Za-z0-9]{1,5})$", body)
             if match:
-                response, number = match[0]
-
                 parsed.update({
-                    'response': response,
-                    'msgNo': number
+                    'response': match.group(1),
+                    'msgNo': match.group(2),
                     })
             else:
                 body = body[0:70]
 
-                match = re.findall(r"([0-9]{1,5})$", body)
+                match = re.search(r"{([A-Za-z0-9]{1,5})$", body)
                 if match:
-                    msgid = match[0]
-                    body = body[:len(body) - 1 - len(msgid)]
+                    msgNo = match.group(1)
+                    body = body[:len(body) - 1 - len(msgNo)]
 
-                    parsed.update({'msgNo': int(msgid)})
+                    parsed.update({'msgNo': msgNo})
 
                 parsed.update({'message_text': body.strip(' ')})
 
         break
 
     return ('', parsed)
-
