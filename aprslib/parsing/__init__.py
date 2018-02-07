@@ -139,6 +139,25 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
+    unsupported_formats = {
+            '#':'raw weather report',
+            '$':'raw gps',
+            '%':'agrelo',
+            '&':'reserved',
+            '(':'unused',
+            ')':'item report',
+            '*':'complete weather report',
+            '+':'reserved',
+            '-':'unused',
+            '.':'reserved',
+            '<':'station capabilities',
+            '?':'general query format',
+            'T':'telemetry report',
+            '[':'maidenhead locator beacon',
+            '\\':'unused',
+            ']':'unused',
+            '^':'unused',
+    }
     # NOT SUPPORTED FORMATS
     #
     # # - raw weather report
@@ -159,7 +178,7 @@ def _try_toparse_body(packet_type, body, parsed):
     # ] - unused
     # ^ - unused
     if packet_type in '#$%)*<?T[':
-        raise UnknownFormat("format is not supported")
+        raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
 
     # 3rd party traffic
     elif packet_type == '}':
