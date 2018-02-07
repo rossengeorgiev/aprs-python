@@ -42,6 +42,7 @@ from aprslib.parsing.mice import *
 from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
 from aprslib.parsing.weather import *
+from aprslib.parsing.thirdparty import *
 
 
 def _unicode_packet(packet):
@@ -157,7 +158,6 @@ def _try_toparse_body(packet_type, body, parsed):
             '\\':'unused',
             ']':'unused',
             '^':'unused',
-            '}':'3rd party traffic'
     }
     # NOT SUPPORTED FORMATS
     #
@@ -178,9 +178,14 @@ def _try_toparse_body(packet_type, body, parsed):
     # \ - unused
     # ] - unused
     # ^ - unused
-    # } - 3rd party traffic
-    if packet_type in '#$%)*<?T[}':
+    if packet_type in '#$%)*<?T[':
         raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
+
+    # third party
+    elif packet_type == '}':
+        logger.debug("Packet is third-party")
+
+        body, result = parse_thirdparty(body)
 
     # user defined
     elif packet_type == ',':
