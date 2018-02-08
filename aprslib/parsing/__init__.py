@@ -43,6 +43,26 @@ from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
 from aprslib.parsing.weather import *
 
+unsupported_formats = {
+        '#':'raw weather report',
+        '$':'raw gps',
+        '%':'agrelo',
+        '&':'reserved',
+        '(':'unused',
+        ')':'item report',
+        '*':'complete weather report',
+        '+':'reserved',
+        '-':'unused',
+        '.':'reserved',
+        '<':'station capabilities',
+        '?':'general query format',
+        'T':'telemetry report',
+        '[':'maidenhead locator beacon',
+        '\\':'unused',
+        ']':'unused',
+        '^':'unused',
+        '}':'3rd party traffic'
+}
 
 def _unicode_packet(packet):
     # attempt utf-8
@@ -138,47 +158,7 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
-    unsupported_formats = {
-            '#':'raw weather report',
-            '$':'raw gps',
-            '%':'agrelo',
-            '&':'reserved',
-            '(':'unused',
-            ')':'item report',
-            '*':'complete weather report',
-            '+':'reserved',
-            '-':'unused',
-            '.':'reserved',
-            '<':'station capabilities',
-            '?':'general query format',
-            'T':'telemetry report',
-            '[':'maidenhead locator beacon',
-            '\\':'unused',
-            ']':'unused',
-            '^':'unused',
-            '}':'3rd party traffic'
-    }
-    # NOT SUPPORTED FORMATS
-    #
-    # # - raw weather report
-    # $ - raw gps
-    # % - agrelo
-    # & - reserved
-    # ( - unused
-    # ) - item report
-    # * - complete weather report
-    # + - reserved
-    # - - unused
-    # . - reserved
-    # < - station capabilities
-    # ? - general query format
-    # T - telemetry report
-    # [ - maidenhead locator beacon
-    # \ - unused
-    # ] - unused
-    # ^ - unused
-    # } - 3rd party traffic
-    if packet_type in '#$%)*<?T[}':
+    if packet_type in unsupported_formats:
         raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
 
     # user defined
