@@ -117,7 +117,6 @@ def parse(packet):
     # capture ParseErrors and attach the packet
     except (UnknownFormat, ParseError) as exp:
         exp.packet = packet
-        exp.parsed = parsed
         raise
 
     # if we fail all attempts to parse, try beacon packet
