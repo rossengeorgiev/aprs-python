@@ -158,11 +158,8 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
-    if packet_type in unsupported_formats:
-        raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
-
     # user defined
-    elif packet_type == ',':
+    if packet_type == ',':
         logger.debug("Packet is invalid format")
 
         body, result = parse_invalid(body)
@@ -202,6 +199,11 @@ def _try_toparse_body(packet_type, body, parsed):
           0 <= body.find('!') < 40):  # page 28 of spec (PDF)
 
         body, result = parse_position(packet_type, body)
+
+    # other data types
+    elif packet_type in unsupported_formats:
+        raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
+
 
     # we are done
     parsed.update(result)
