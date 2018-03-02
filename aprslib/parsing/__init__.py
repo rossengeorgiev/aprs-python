@@ -41,6 +41,7 @@ from aprslib.parsing.position import *
 from aprslib.parsing.mice import *
 from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
+from aprslib.parsing.thirdparty import *
 from aprslib.parsing.weather import *
 
 
@@ -158,8 +159,13 @@ def _try_toparse_body(packet_type, body, parsed):
     # ] - unused
     # ^ - unused
     # } - 3rd party traffic
-    if packet_type in '#$%)*<?T[}':
+    if packet_type in '#$%)*<?T[':
         raise UnknownFormat("format is not supported")
+
+    # 3rd party traffic
+    elif packet_type == '}':
+        logger.debug("Packet is third-party")
+        body, result = parse_thirdparty(body)
 
     # user defined
     elif packet_type == ',':
