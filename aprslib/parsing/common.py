@@ -62,6 +62,7 @@ def parse_header(head):
         'from': fromcall,
         'to': tocall,
         'path': path,
+        'digipath': digipath,
         }
 
     viacall = ""
@@ -71,6 +72,21 @@ def parse_header(head):
     parsed.update({'via': viacall})
 
     return parsed
+
+
+def remove_WIDEn_N(path):
+    """
+    Remove WIDEn-N entries and * markers from path, leaving only digi names
+    path: path of parsed packet (list of strings)
+    returns: list of digipeaters that digipeated packet, in order
+    """
+    digipath = []
+    for digi in path:
+        digi = re.sub('\*','',digi) # Get rid of * markers
+        if not re.match('WIDE[0-9]-*[0-9]*',digi): # check for not WIDEn-N
+            digipath.append(digi)
+
+    return digipath
 
 
 def parse_timestamp(body, packet_type=''):
