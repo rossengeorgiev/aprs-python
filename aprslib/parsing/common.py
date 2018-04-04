@@ -62,7 +62,6 @@ def parse_header(head):
         'from': fromcall,
         'to': tocall,
         'path': path,
-        'digipath': digipath,
         }
 
     viacall = ""
