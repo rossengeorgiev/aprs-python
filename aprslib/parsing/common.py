@@ -13,6 +13,7 @@ __all__ = [
     'parse_data_extentions',
     'parse_comment_altitude',
     'parse_dao',
+    'remove_WIDEn_N',
     ]
 
 def validate_callsign(callsign, prefix=""):
