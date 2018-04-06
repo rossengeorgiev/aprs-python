@@ -1,5 +1,13 @@
 from math import floor
+import re
 
+__all__=["degrees_to_ddm", 
+        "latitude_to_ddm", 
+        "longitude_to_ddm",
+        "comment_altitude",
+        "floor",
+        "remove_WIDEn_N",
+        ]
 
 def degrees_to_ddm(dd):
     degrees = int(floor(dd))
@@ -40,6 +48,6 @@ def remove_WIDEn_N(path):
     path: path of parsed packet (list of strings)
     returns: list of digipeaters that digipeated packet, in order
     """
-    path = map(lambda x: re.sub('*$', '', x), path) # Remove asterisks
+    path = map(lambda x: re.sub('\*$', '', x), path) # Remove asterisks
     path = list(filter(lambda x: not re.match(r'WIDE[0-9\-\*]+$', x), path))
     return(path)
