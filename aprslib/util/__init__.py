@@ -34,3 +34,11 @@ def comment_altitude(altitude):
     return "/A={0:06.0f}".format(altitude)
 
 
+def remove_WIDEn_N(path):
+    """
+    Remove WIDEn-N entries and asterisks from path, leaving only digi names
+    path: path of parsed packet (list of strings)
+    returns: list of digipeaters that digipeated packet, in order
+    """
+    path = map(lambda x: re.sub('*$', '', x), path) # Remove asterisks
+    return(path = list(filter(lambda x: not re.match(r'WIDE[0-9\-\*]+$', x), path)))
