@@ -13,7 +13,7 @@ def parse_thirdparty(body):
     # Parse sub-packet
     try:
         subpacket = parse(body)
-    except (UnknownFormat) as ukf:
+    except (UnknownFormat,ParseError) as ukf:
         raise
 
     parsed.update({'subpacket':subpacket})
