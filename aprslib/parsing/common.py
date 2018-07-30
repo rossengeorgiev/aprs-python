@@ -151,7 +151,7 @@ def parse_data_extentions(body):
             if nrq.isdigit():
                 parsed.update({'nrq': int(nrq)})
     else:
-        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?))", body)
+        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d))", body)
         if match:
             ext, phg = match[0]
             body = body[len(ext):]
