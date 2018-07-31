@@ -49,5 +49,5 @@ def remove_WIDEn_N(path):
     returns: list of digipeaters that digipeated packet, in order
     """
     path = map(lambda x: re.sub('\*$', '', x), path) # Remove asterisks
-    path = list(filter(lambda x: not re.match(r'WIDE[0-9\-\*]+$', x), path))
+    path = list(filter(lambda x: not re.match(r'WIDE[0-9\-\*]*$', x), path))
     return(path)
