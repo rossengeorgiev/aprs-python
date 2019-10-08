@@ -187,9 +187,9 @@ def parse_mice(dstcall, body):
         if match:
             hexdata, body = match[0]
 
-            hexdata = hexdata[1:]           # remove telemtry flag
-            channels = len(hexdata) / 2     # determine number of channels
-            hexdata = int(hexdata, 16)      # convert hex to int
+            hexdata = hexdata[1:]             # remove telemtry flag
+            channels = int(len(hexdata) / 2)  # determine number of channels
+            hexdata = int(hexdata, 16)        # convert hex to int
 
             telemetry = []
             for i in range(channels):
