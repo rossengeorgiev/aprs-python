@@ -47,7 +47,7 @@ class ParseCommentTelemetry(unittest.TestCase):
 
             bits = None
 
-            if len(vals) is 5 and randint(1, 10) > 5:
+            if len(vals) == 5 and randint(1, 10) > 5:
                 bits = "{0:08b}".format(randint(0, 255))[::-1]
 
             testData = self.genTelem(i, vals, bits)
