@@ -157,7 +157,7 @@ class IS(object):
             self.close()
             raise ConnectionError(str(exp))
 
-    def consumer(self, callback, blocking=True, immortal=False, raw=False):
+    def consumer(self, callback, blocking=True, immortal=False, raw=False, **kwargs):
         """
         When a position sentence is received, it will be passed to the callback function
 
@@ -180,9 +180,9 @@ class IS(object):
                 for line in self._socket_readlines(blocking):
                     if line[0:1] != b'#':
                         if raw:
-                            callback(line)
+                            callback(line, **kwargs)
                         else:
-                            callback(self._parse(line))
+                            callback(self._parse(line), **kwargs)
                     else:
                         self.logger.debug("Server: %s", line.decode('utf8'))
             except ParseError as exp:
