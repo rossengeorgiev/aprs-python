@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import sys
-import unittest2 as unittest
+import unittest
 from mox3 import mox
 
 from aprslib import parse

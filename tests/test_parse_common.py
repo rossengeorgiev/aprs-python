@@ -1,4 +1,4 @@
-import unittest2 as unittest
+import unittest
 import string
 from random import randint, randrange, sample
 from datetime import datetime
