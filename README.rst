@@ -1,7 +1,7 @@
 APRS library for Python
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-|pypi| |coverage| |scru| |master_build| |docs|
+|pypi| |coverage| |master_build| |docs|
 
 A python library for dealing with APRS.
 It can be used to interact with APRS-IS servers, sending and receiving.
@@ -35,10 +35,6 @@ Contribution
 .. |coverage| image:: https://img.shields.io/coveralls/rossengeorgiev/aprs-python/master.svg?style=flat
     :target: https://coveralls.io/r/rossengeorgiev/aprs-python?branch=master
     :alt: Test coverage
-
-.. |scru| image:: https://scrutinizer-ci.com/g/rossengeorgiev/aprs-python/badges/quality-score.png?b=master
-    :target: https://scrutinizer-ci.com/g/rossengeorgiev/aprs-python/?branch=master
-    :alt: Scrutinizer score
 
 .. |master_build| image:: https://github.com/rossengeorgiev/aprs-python/workflows/Tests/badge.svg?branch=master
     :target: https://github.com/rossengeorgiev/aprs-python/actions?query=workflow%3A%22Tests%22+branch%3Amaster
