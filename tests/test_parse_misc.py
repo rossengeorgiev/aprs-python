@@ -1,4 +1,4 @@
-import unittest2 as unittest
+import unittest
 
 from aprslib.parsing.misc import parse_status, parse_invalid, parse_user_defined
 
