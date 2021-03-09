@@ -1,5 +1,0 @@
-nose
-coverage
-unittest2
-mox3
-sphinx==1.3.5

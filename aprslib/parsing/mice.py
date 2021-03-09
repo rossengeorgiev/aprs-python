@@ -140,15 +140,15 @@ def parse_mice(dstcall, body):
 
     # apply position ambiguity
     # routines adjust longitude to center of the ambiguity box
-    if posambiguity is 4:
+    if posambiguity == 4:
         lngminutes = 30
-    elif posambiguity is 3:
+    elif posambiguity == 3:
         lngminutes = (math.floor(lngminutes/10) + 0.5) * 10
-    elif posambiguity is 2:
+    elif posambiguity == 2:
         lngminutes = math.floor(lngminutes) + 0.5
-    elif posambiguity is 1:
+    elif posambiguity == 1:
         lngminutes = (math.floor(lngminutes*10) + 0.5) / 10.0
-    elif posambiguity is not 0:
+    elif posambiguity != 0:
         raise ParseError("Unsupported position ambiguity: %d" % posambiguity)
 
     longitude += lngminutes / 60.0
@@ -187,9 +187,9 @@ def parse_mice(dstcall, body):
         if match:
             hexdata, body = match[0]
 
-            hexdata = hexdata[1:]           # remove telemtry flag
-            channels = len(hexdata) / 2     # determine number of channels
-            hexdata = int(hexdata, 16)      # convert hex to int
+            hexdata = hexdata[1:]             # remove telemtry flag
+            channels = int(len(hexdata) / 2)  # determine number of channels
+            hexdata = int(hexdata, 16)        # convert hex to int
 
             telemetry = []
             for i in range(channels):
