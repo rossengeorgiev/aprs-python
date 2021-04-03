@@ -42,6 +42,7 @@ from aprslib.parsing.mice import *
 from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
 from aprslib.parsing.weather import *
+from aprslib.parsing.thirdparty import *
 
 
 def _unicode_packet(packet):
@@ -116,6 +117,7 @@ def parse(packet):
     # capture ParseErrors and attach the packet
     except (UnknownFormat, ParseError) as exp:
         exp.packet = packet
+        exp.parsed = parsed
         raise
 
     # if we fail all attempts to parse, try beacon packet
@@ -138,6 +140,25 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
+    unsupported_formats = {
+            '#':'raw weather report',
+            '$':'raw gps',
+            '%':'agrelo',
+            '&':'reserved',
+            '(':'unused',
+            ')':'item report',
+            '*':'complete weather report',
+            '+':'reserved',
+            '-':'unused',
+            '.':'reserved',
+            '<':'station capabilities',
+            '?':'general query format',
+            'T':'telemetry report',
+            '[':'maidenhead locator beacon',
+            '\\':'unused',
+            ']':'unused',
+            '^':'unused',
+    }
     # NOT SUPPORTED FORMATS
     #
     # # - raw weather report
@@ -156,9 +177,14 @@ def _try_toparse_body(packet_type, body, parsed):
     # \ - unused
     # ] - unused
     # ^ - unused
-    # } - 3rd party traffic
-    if packet_type in '#$%)*<?[}':
-        raise UnknownFormat("format is not supported")
+    if packet_type in '#$%)*<?[':
+        raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
+
+    # third party
+    elif packet_type == '}':
+        logger.debug("Packet is third-party")
+
+        body, result = parse_thirdparty(body)
 
     # user defined
     elif packet_type == ',':
