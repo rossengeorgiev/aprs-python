@@ -318,16 +318,23 @@ class DataExtentionsTC(unittest.TestCase):
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '1234A',
-            })
+            'dir': 180,
+            'gain': '3db',
+            'haat': '12.192m',
+            'period': 10,
+            'power': '1W',
+            'range': '8.088km'})
 
         body = "PHG1234text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '1234',
-            })
+            'dir': 180,
+            'gain': '3db',
+            'haat': '12.192m',
+            'power': '1W',
+            'range': '8.088km'})
 
     def test_range(self):
         body = "RNG1000text"
