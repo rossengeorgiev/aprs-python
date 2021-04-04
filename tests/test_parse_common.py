@@ -323,7 +323,7 @@ class DataExtentionsTC(unittest.TestCase):
             'haat': '12.192m',
             'period': 10,
             'power': '1W',
-            'range': '8.088km'})
+            'range': '8.088km'}})
 
         body = "PHG1234text"
         remaining, parsed = parse_data_extentions(body)
@@ -334,7 +334,7 @@ class DataExtentionsTC(unittest.TestCase):
             'gain': '3db',
             'haat': '12.192m',
             'power': '1W',
-            'range': '8.088km'})
+            'range': '8.088km'}})
 
     def test_range(self):
         body = "RNG1000text"
