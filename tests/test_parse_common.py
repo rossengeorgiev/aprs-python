@@ -317,7 +317,7 @@ class DataExtentionsTC(unittest.TestCase):
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
-        self.assertEqual(parsed, {
+        self.assertEqual(parsed, { 'phg': {
             'dir': 180,
             'gain': '3db',
             'haat': '12.192m',
@@ -329,7 +329,7 @@ class DataExtentionsTC(unittest.TestCase):
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
-        self.assertEqual(parsed, {
+        self.assertEqual(parsed, { 'phg': {
             'dir': 180,
             'gain': '3db',
             'haat': '12.192m',
