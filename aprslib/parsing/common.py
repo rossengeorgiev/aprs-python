@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from math import sqrt
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
@@ -155,7 +156,7 @@ def parse_data_extentions(body):
         if match:
             ext, phg = match[0]
             body = body[len(ext):]
-            parsed.update({'phg': phg})
+            parsed.update({'phg': parse_phg(phg)})
         else:
             match = re.findall(r"^RNG(\d{4})", body)
             if match:
@@ -164,6 +165,24 @@ def parse_data_extentions(body):
                 parsed.update({'rng': int(rng) * 1.609344})  # miles to km
 
     return body, parsed
+
+def parse_phg(body):
+    print(body)
+    power = int(body[0]) ** 2 # Watt
+    haat = (10 * 2 ** (ord(body[1])-48)) # feet
+    gain = int(body[2]) # db
+    if body[3]=='0': 
+        direction="omni"
+    elif body[3]=='9':
+        direction='invalid'
+    else:
+        direction = int(body[3]) * 45
+    trange = sqrt(2*haat*sqrt((power/10)*(10**(gain/10))/2))
+    return {"power": "%sW" % power,
+            "haat": "%.3fm" % (haat * 0.3048),
+            "gain": "%sdb" % gain,
+            "dir": direction,
+            "range": "%.3fkm" % (trange * 1.609)}
 
 def parse_comment_altitude(body):
     parsed = {}
