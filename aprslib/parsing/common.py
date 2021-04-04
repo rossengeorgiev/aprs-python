@@ -178,11 +178,17 @@ def parse_phg(body):
     else:
         direction = int(body[3]) * 45
     trange = sqrt(2*haat*sqrt((power/10)*(10**(gain/10))/2))
-    return {"power": "%sW" % power,
-            "haat": "%.3fm" % (haat * 0.3048),
-            "gain": "%sdb" % gain,
-            "dir": direction,
-            "range": "%.3fkm" % (trange * 1.609)}
+    res = {"power": "%sW" % power,
+           "haat": "%.3fm" % (haat * 0.3048),
+           "gain": "%sdb" % gain,
+           "dir": direction,
+           "range": "%.3fkm" % (trange * 1.609)}
+    if len(body)>4:
+        if (body[4].isalpha() and body[4].isupper()):
+           res['period']=ord(body[4]) - 55
+        elif body[4].isdigit():
+           res['period']=ord(body[4]) - 48 
+    return res
 
 def parse_comment_altitude(body):
     parsed = {}
