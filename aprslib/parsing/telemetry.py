@@ -13,7 +13,7 @@ __all__ = [
 def parse_telemetry(body):
     parsed = {}
 
-    match = re.match(r'#(\d{3},|MIC,?)(\d{3}),(\d{3}),(\d{3}),(\d{3}),(\d{3}),([0-1]{8})(.*)', body, flags=re.I)
+    match = re.match(r'#([0-9.]{3,4}|MIC,?),([0-9.]{3,4}),([0-9.]{3,4}),([0-9.]{3,4}),([0-9.]{3,4}),([0-9.]{3,4}),([0-1]{8,9})(.*)', body, flags=re.I)
 
     if not match:
         raise ParseError("Invalid telemetry format")
@@ -23,7 +23,7 @@ def parse_telemetry(body):
     parsed.update({
         'format': 'telemetry',
         'sequence_number': 0 if data[0].lower().startswith('mic') else int(data[0][:3]),
-        'analog_values': list(map(int, data[1:6])),
+        'analog_values': list(map(float, data[1:6])),
         'digital_value': int(data[6], 2)
         })
 
