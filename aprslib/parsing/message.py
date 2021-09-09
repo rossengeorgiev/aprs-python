@@ -125,10 +125,17 @@ def parse_message(body):
                     parsed.pop("message_text")
                 has_matched = True
 
+            # escape from the eternal 'while'
+            if has_matched:
+                break
+
             #
             # regular message body parser
             #
             if not has_matched:
+                # one-time truncate to 67 chars
+                body = body[0:67].strip()
+
                 # new message format: http://www.aprs.org/aprs11/replyacks.txt
                 # search for: msgText/msgNo/ackMsgNo all present
                 match = re.search(r"{([A-Za-z0-9]{2})}([A-Za-z0-9]{2})$", body)
@@ -139,7 +146,6 @@ def parse_message(body):
                     parsed.update({'msgNo': msgNo})
                     parsed.update({'ackMsgNo': ackMsgNo})
                     has_matched = True
-                    parsed.update({'message_text': body[0:67].strip()})
 
             # new message format: http://www.aprs.org/aprs11/replyacks.txt
             # search for: msgText/msgNo present and ackMsgNo not present
@@ -150,8 +156,6 @@ def parse_message(body):
                     body = body[:len(body) - 2 - len(msgNo)]
                     parsed.update({'msgNo': msgNo})
                     has_matched = True
-                    body = body[0:67].strip()
-                    parsed.update({'message_text': body[0:67].strip()})
 
             # old message format - see aprs101.pdf.
             # search for: msgNo present
@@ -162,7 +166,9 @@ def parse_message(body):
                         body = body[:len(body) - 1 - len(msgNo)]
                         parsed.update({'msgNo': msgNo})
                         has_matched = True
-                        parsed.update({'message_text': body[0:67].strip()})
+
+            # update the potentially changed message body in our dictionary
+            parsed.update({'message_text': body[0:67].strip()})
 
             # break free from the eternal 'while'
             break
