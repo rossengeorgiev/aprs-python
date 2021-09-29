@@ -151,17 +151,23 @@ def parse_data_extentions(body):
             if nrq.isdigit():
                 parsed.update({'nrq': int(nrq)})
     else:
-        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?))", body)
+        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?\/))", body)
         if match:
-            ext, phg = match[0]
-            body = body[len(ext):]
-            parsed.update({'phg': phg})
-        else:
-            match = re.findall(r"^RNG(\d{4})", body)
-            if match:
-                rng = match[0]
-                body = body[7:]
-                parsed.update({'rng': int(rng) * 1.609344})  # miles to km
+            ext, phg = match[0]      
+            body = body[len(ext):]                           
+            parsed.update({'phg': phg})                                            
+        else:                       
+            match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d))", body)
+            if match:             
+                ext, phg = match[0]                                          
+                body = body[len(ext):]
+                parsed.update({'phg': phg})     
+            else:
+                match = re.findall(r"^RNG(\d{4})", body)                           
+                if match:                                                                              
+                    rng = match[0]               
+                    body = body[7:]
+                    parsed.update({'rng': int(rng) * 1.609344})  # miles to km
 
     return body, parsed
 
