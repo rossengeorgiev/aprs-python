@@ -65,8 +65,8 @@ class ParseTestCase(unittest.TestCase):
             self.fail("empty status packet shouldn't raise exception")
 
     def test_unsupported_formats_raising(self):
-        with self.assertRaises(UnknownFormat):
-            for packet_type in '#$%)*,<?T[_{':
+        for packet_type in parsing.unsupported_formats:
+            with self.assertRaises(UnknownFormat):
                 packet = "A>B:%saaa" % packet_type
 
                 try:
