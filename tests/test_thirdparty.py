@@ -1,5 +1,5 @@
 
-import unittest2 as unittest
+import unittest
 
 from aprslib import parse
 from aprslib.exceptions import ParseError, UnknownFormat
