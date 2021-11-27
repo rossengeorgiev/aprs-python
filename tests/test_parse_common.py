@@ -313,10 +313,10 @@ class DataExtentionsTC(unittest.TestCase):
             })
 
     def test_PHG(self):
-        body = "PHG1234Atext"
+        body = "PHG1234A/text"
         remaining, parsed = parse_data_extentions(body)
 
-        self.assertEqual(remaining, 'text')
+        self.assertEqual(remaining, '/text')
         self.assertEqual(parsed, {
             'phg': '1234A',
             })
