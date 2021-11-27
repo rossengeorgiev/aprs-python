@@ -133,8 +133,10 @@ def parse_comment(body, parsed):
 
 def parse_data_extentions(body):
     parsed = {}
-    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
 
+    # course speed bearing nrq
+    # format: 111/222/333/444text
+    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
     if match:
         cse, spd = match[0]
         body = body[7:]
@@ -151,21 +153,23 @@ def parse_data_extentions(body):
             if nrq.isdigit():
                 parsed.update({'nrq': int(nrq)})
     else:
-        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?\/))", body)
+        # PHG format: PHGabcd....
+        # RHGR format: RHGabcdr/....
+        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d)([0-9A-Z]\/)?)", body)
         if match:
-            ext, phg = match[0]      
-            body = body[len(ext):]                           
-            parsed.update({'phg': phg})                                            
-        else:                       
-            match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d))", body)
-            if match:             
-                ext, phg = match[0]                                          
-                body = body[len(ext):]
-                parsed.update({'phg': phg})     
-            else:
-                match = re.findall(r"^RNG(\d{4})", body)                           
-                if match:                                                                              
-                    rng = match[0]               
+            print(match)
+            ext, phg, phgr = match[0]
+            body = body[len(ext):]
+            parsed.update({'phg': phg})
+
+            if phgr:
+                # PHG rate per hour
+                parsed['phg'] += phgr[0]
+                parsed.update({'phg_rate': int(phgr[0], 16)}) # as decimal
+        else:
+                match = re.findall(r"^RNG(\d{4})", body)
+                if match:
+                    rng = match[0]
                     body = body[7:]
                     parsed.update({'rng': int(rng) * 1.609344})  # miles to km
 

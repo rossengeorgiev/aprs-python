@@ -312,15 +312,36 @@ class DataExtentionsTC(unittest.TestCase):
             'nrq': 345,
             })
 
-    def test_PHG(self):
-        body = "PHG1234Atext"
+    def test_PHGR_1(self):
+        body = "PHG12345/text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '1234A',
+            'phg': '12345',
+            'phg_rate': 5,
             })
 
+    def test_PHGR_2(self):
+        body = "PHG1234F/text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'phg': '1234F',
+            'phg_rate': 15,
+            })
+
+    def test_PHG_1(self):
+        body = "PHG1234Atext"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'Atext')
+        self.assertEqual(parsed, {
+            'phg': '1234',
+            })
+
+    def test_PHG_2(self):
         body = "PHG1234text"
         remaining, parsed = parse_data_extentions(body)
 
