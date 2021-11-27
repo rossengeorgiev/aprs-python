@@ -313,42 +313,76 @@ class DataExtentionsTC(unittest.TestCase):
             })
 
     def test_PHGR_1(self):
-        body = "PHG12345/text"
+        body = "PHG51325/text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '12345',
+            'phg': '51325',
             'phg_rate': 5,
+            'phg_power': 25,
+            'phg_height': 6.096,
+            'phg_gain': 1.9952623149688795,
+            'phg_dir': 90,
+            'phg_range': 12.791023731208883,
             })
 
     def test_PHGR_2(self):
-        body = "PHG1234F/text"
+        body = "PHG5132F/text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '1234F',
+            'phg': '5132F',
             'phg_rate': 15,
+            'phg_power': 25,
+            'phg_height': 6.096,
+            'phg_gain': 1.9952623149688795,
+            'phg_dir': 90,
+            'phg_range': 12.791023731208883,
             })
 
     def test_PHG_1(self):
-        body = "PHG1234Atext"
+        body = "PHG5132Atext"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'Atext')
         self.assertEqual(parsed, {
-            'phg': '1234',
+            'phg': '5132',
+            'phg_power': 25,
+            'phg_height': 6.096,
+            'phg_gain': 1.9952623149688795,
+            'phg_dir': 90,
+            'phg_range': 12.791023731208883,
             })
 
     def test_PHG_2(self):
-        body = "PHG1234text"
+        body = "PHG5132text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
-            'phg': '1234',
+            'phg': '5132',
+            'phg_power': 25,
+            'phg_height': 6.096,
+            'phg_gain': 1.9952623149688795,
+            'phg_dir': 90,
+            'phg_range': 12.791023731208883,
             })
+
+    def test_PHG_dir_omni(self):
+        body = "PHG0000text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed['phg_dir'], 'omni')
+
+    def test_PHG_dir_invalid(self):
+        body = "PHG0009text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed['phg_dir'], 'invalid')
 
     def test_range(self):
         body = "RNG1000text"

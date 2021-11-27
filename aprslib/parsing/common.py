@@ -1,4 +1,5 @@
 import re
+from math import sqrt
 from datetime import datetime
 from aprslib import base91
 from aprslib.exceptions import ParseError
@@ -160,7 +161,28 @@ def parse_data_extentions(body):
             print(match)
             ext, phg, phgr = match[0]
             body = body[len(ext):]
-            parsed.update({'phg': phg})
+            parsed.update({
+                'phg': phg,
+                'phg_power': int(phg[0]) ** 2, # watts
+                'phg_height': (10 * (2 ** (ord(phg[1]) - 0x30))) * 0.3048, # in meters
+                'phg_gain': 10 ** (int(phg[2]) / 10), # dB
+                })
+
+            phg_dir = int(phg[3])
+            if phg_dir == 0:
+                phg_dir = 'omni'
+            elif phg_dir == 9:
+                phg_dir = 'invalid'
+            else:
+                phg_dir = 45 * phg_dir
+
+            parsed['phg_dir'] = phg_dir
+            # range in km
+            parsed['phg_range'] = sqrt(2 * (parsed['phg_height'] / 0.3048)
+                                       * sqrt((parsed['phg_power'] / 10.0)
+                                               * (parsed['phg_gain'] / 2.0)
+                                              )
+                                       ) * 1.60934
 
             if phgr:
                 # PHG rate per hour
