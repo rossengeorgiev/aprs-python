@@ -165,7 +165,7 @@ def parse_data_extentions(body):
                 'phg': phg,
                 'phg_power': int(phg[0]) ** 2, # watts
                 'phg_height': (10 * (2 ** (ord(phg[1]) - 0x30))) * 0.3048, # in meters
-                'phg_gain': 10 ** (int(phg[2]) / 10), # dB
+                'phg_gain': 10 ** (int(phg[2]) / 10.0), # dB
                 })
 
             phg_dir = int(phg[3])
