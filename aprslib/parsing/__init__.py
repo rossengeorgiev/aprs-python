@@ -158,7 +158,6 @@ def _try_toparse_body(packet_type, body, parsed):
     # \ - unused
     # ] - unused
     # ^ - unused
-    # } - 3rd party traffic
     if packet_type in '#$%)*<?T[':
         raise UnknownFormat("format is not supported")
 
