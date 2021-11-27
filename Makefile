@@ -41,5 +41,4 @@ dist: clean
 	python setup.py bdist_wheel --universal
 
 upload: dist
-	python setup.py register -r pypi
 	twine upload -r pypi dist/*

@@ -1,4 +1,6 @@
 
+twine
+wheel
 mox3
 
 coverage>=5.0; python_version == '2.7' or python_version >= '3.5'
