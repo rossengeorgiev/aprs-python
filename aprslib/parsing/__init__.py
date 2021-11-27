@@ -159,7 +159,7 @@ def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
     if packet_type in unsupported_formats:
-        raise UnknownFormat('format is not supported: {0}'.format(unsupported_formats[packet_type]))
+        raise UnknownFormat("Format is not supported: '{}' {}".format(packet_type, unsupported_formats[packet_type]))
 
     # 3rd party traffic
     elif packet_type == '}':
