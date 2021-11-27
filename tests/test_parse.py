@@ -66,7 +66,7 @@ class ParseTestCase(unittest.TestCase):
 
     def test_unsupported_formats_raising(self):
         with self.assertRaises(UnknownFormat):
-            for packet_type in '#$%)*,<?T[_{}':
+            for packet_type in '#$%)*,<?T[_{':
                 packet = "A>B:%saaa" % packet_type
 
                 try:
