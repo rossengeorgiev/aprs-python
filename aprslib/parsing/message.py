@@ -69,28 +69,66 @@ def parse_message(body):
             break
 
         # regular message
-        else:
-            logger.debug("Packet is just a regular message")
-            parsed.update({'format': 'message'})
+        # ---------------------------
+        logger.debug("Packet is just a regular message")
+        parsed.update({'format': 'message'})
 
-            match = re.search(r"^(ack|rej)([A-Za-z0-9]{1,5})$", body)
-            if match:
-                parsed.update({
-                    'response': match.group(1),
-                    'msgNo': match.group(2),
-                    })
-            else:
-                body = body[0:70]
+        # APRS supports two different message formats:
+        # - the standard format which is described in 'aprs101.pdf':
+        #   http://www.aprs.org/doc/APRS101.PDF
+        # - an addendum from 1999 which introduces a new format:
+        #   http://www.aprs.org/aprs11/replyacks.txt
+        #
+        # A message (ack/rej as well as a standard msg text body) can either have:
+        # - no message number at all
+        # - a message number in the old format (1..5 characters / digits)
+        # - a message number in the new format (2 characters / digits) without trailing 'ack msg no'
+        # - a message number in the new format with trailing 'free ack msg no' (2 characters / digits)
 
-                match = re.search(r"{([A-Za-z0-9]{1,5})$", body)
-                if match:
-                    msgNo = match.group(1)
-                    body = body[:len(body) - 1 - len(msgNo)]
+        # ack / rej
+        # ---------------------------
+        # NEW REPLAY-ACK
+        # format: :AAAABBBBC:ackMM}AA
+        match = re.findall(r"^(ack|rej)([A-Za-z0-9]{2})}([A-Za-z0-9]{2})?$", body)
+        if match:
+            parsed['response'], parsed['msgNo'], ackMsgNo = match[0]
+            if ackMsgNo:
+                parsed['ackMsgNo'] = ackMsgNo
+            break
 
-                    parsed.update({'msgNo': msgNo})
+        # ack/rej standard format as per aprs101.pdf chapter 14
+        # format: :AAAABBBBC:ack12345
+        match = re.findall(r"^(ack|rej)([A-Za-z0-9]{1,5})$", body)
+        if match:
+            parsed['response'], parsed['msgNo'] = match[0]
+            break
 
-                parsed.update({'message_text': body.strip(' ')})
+        # regular message body parser
+        # ---------------------------
+        parsed['message_text'] = body.strip(' ')
 
+        # check for ACKs
+        # new message format: http://www.aprs.org/aprs11/replyacks.txt
+        # format: :AAAABBBBC:text.....{MM}AA
+        match = re.findall(r"{([A-Za-z0-9]{2})}([A-Za-z0-9]{2})?$", body)
+        if match:
+            msgNo, ackMsgNo = match[0]
+            parsed['message_text'] = body[:len(body) - 4 - len(ackMsgNo)].strip(' ')
+            parsed['msgNo'] = msgNo
+            if ackMsgNo:
+                parsed['ackMsgNo'] = ackMsgNo
+            break
+
+        # old message format - see aprs101.pdf.
+        # search for: msgNo present
+        match = re.findall(r"{([A-Za-z0-9]{1,5})$", body)
+        if match:
+            msgNo = match[0]
+            parsed['message_text'] = body[:len(body) - 1 - len(msgNo)].strip(' ')
+            parsed['msgNo'] = msgNo
+            break
+
+        # break free from the eternal 'while'
         break
 
     return ('', parsed)
