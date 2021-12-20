@@ -333,11 +333,13 @@ class IS(object):
                     self.logger.error("socket.recv(): returned empty")
                     raise ConnectionDrop("connection dropped")
             except socket.error as e:
-                self.logger.error("socket error on recv(): %s" % str(e))
-                if "Resource temporarily unavailable" in str(e):
-                    if not blocking:
-                        if len(self.buf) == 0:
-                            break
+                # ignore error when blocking=false, and we attempt to read empty socket
+                if ("Resource temporarily unavailable" in str(e)
+                   and not blocking
+                   and len(self.buf) == 0):
+                        break
+                else:
+                    self.logger.error("socket error on recv(): %s" % str(e))
 
             self.buf += short_buf
 
