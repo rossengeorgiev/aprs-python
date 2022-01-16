@@ -18,11 +18,11 @@ help:
 	@echo "$$HELPBODY"
 
 init:
-	pip install -r requirements.txt
+	pip install -r dev_requirements.txt
 
 test:
-	rm -f .coverage aprslib/*.pyc
-	nosetests --verbosity $(verbosity) --with-coverage --cover-package=aprslib
+	rm -f .coverage aprslib/*.pyc tests/*.pyc
+	PYTHONHASHSEED=0 pytest --tb=short --cov-config .coveragerc --cov=aprslib tests
 
 pylint:
 	pylint -r n -f colorized aprslib || true
@@ -41,5 +41,4 @@ dist: clean
 	python setup.py bdist_wheel --universal
 
 upload: dist
-	python setup.py register -r pypi
 	twine upload -r pypi dist/*

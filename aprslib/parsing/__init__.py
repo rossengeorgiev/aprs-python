@@ -41,8 +41,28 @@ from aprslib.parsing.position import *
 from aprslib.parsing.mice import *
 from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
+from aprslib.parsing.thirdparty import *
 from aprslib.parsing.weather import *
 
+unsupported_formats = {
+        '#':'raw weather report',
+        '$':'raw gps',
+        '%':'agrelo',
+        '&':'reserved',
+        '(':'unused',
+        ')':'item report',
+        '*':'complete weather report',
+        '+':'reserved',
+        '-':'unused',
+        '.':'reserved',
+        '<':'station capabilities',
+        '?':'general query format',
+        'T':'telemetry report',
+        '[':'maidenhead locator beacon',
+        '\\':'unused',
+        ']':'unused',
+        '^':'unused',
+}
 
 def _unicode_packet(packet):
     # attempt utf-8
@@ -138,28 +158,13 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
-    # NOT SUPPORTED FORMATS
-    #
-    # # - raw weather report
-    # $ - raw gps
-    # % - agrelo
-    # & - reserved
-    # ( - unused
-    # ) - item report
-    # * - complete weather report
-    # + - reserved
-    # - - unused
-    # . - reserved
-    # < - station capabilities
-    # ? - general query format
-    # T - telemetry report
-    # [ - maidenhead locator beacon
-    # \ - unused
-    # ] - unused
-    # ^ - unused
-    # } - 3rd party traffic
-    if packet_type in '#$%)*<?T[}':
-        raise UnknownFormat("format is not supported")
+    if packet_type in unsupported_formats:
+        raise UnknownFormat("Format is not supported: '{}' {}".format(packet_type, unsupported_formats[packet_type]))
+
+    # 3rd party traffic
+    elif packet_type == '}':
+        logger.debug("Packet is third-party")
+        body, result = parse_thirdparty(body)
 
     # user defined
     elif packet_type == ',':

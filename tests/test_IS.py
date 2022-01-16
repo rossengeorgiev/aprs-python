@@ -1,4 +1,4 @@
-import unittest2 as unittest
+import unittest
 import socket
 import sys
 import os
@@ -47,6 +47,9 @@ class TC_IS(unittest.TestCase):
         f.write("something")
         f.close()
 
+        class BreakBlocking(Exception):
+            pass
+
         self.m.ReplayAll()
         self.ais.sock = mox.MockAnything()
         # part 1 - conn drop before setblocking
@@ -74,7 +77,7 @@ class TC_IS(unittest.TestCase):
         self.ais.sock.fileno().AndReturn(fdr)
         self.ais.sock.recv(mox.IgnoreArg()).AndReturn(b"b\r\n"*3)
         self.ais.sock.fileno().AndReturn(fdr)
-        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(StopIteration)
+        self.ais.sock.recv(mox.IgnoreArg()).AndRaise(BreakBlocking)
         mox.Replay(self.ais.sock)
 
         next_method = '__next__' if sys.version_info[0] >= 3 else 'next'
@@ -92,8 +95,9 @@ class TC_IS(unittest.TestCase):
         for line in self.ais._socket_readlines():
             self.assertEqual(line, b'a')
         # part 5
-        for line in self.ais._socket_readlines(blocking=True):
-            self.assertEqual(line, b'b')
+        with self.assertRaises(BreakBlocking):
+            for line in self.ais._socket_readlines(blocking=True):
+                self.assertEqual(line, b'b')
 
         mox.Verify(self.ais.sock)
 

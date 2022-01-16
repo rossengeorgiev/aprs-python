@@ -1,4 +1,4 @@
-import unittest2 as unittest
+import unittest
 
 from aprslib.parsing import parse_weather_data
 from aprslib.parsing import parse

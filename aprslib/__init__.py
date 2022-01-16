@@ -41,8 +41,8 @@ from datetime import date as _date
 __date__ = str(_date.today())
 del _date
 
-__version__ = "0.6.46"
-version_info = (0, 6, 46)
+__version__ = "0.7.0"
+version_info = (0, 7, 0)
 __author__ = "Rossen Georgiev"
 __all__ = ['IS', 'parse', 'passcode']
 

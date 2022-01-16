@@ -1,4 +1,5 @@
 import re
+from math import sqrt
 from datetime import datetime
 from aprslib import base91
 from aprslib.exceptions import ParseError
@@ -133,8 +134,10 @@ def parse_comment(body, parsed):
 
 def parse_data_extentions(body):
     parsed = {}
-    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
 
+    # course speed bearing nrq
+    # format: 111/222/333/444text
+    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
     if match:
         cse, spd = match[0]
         body = body[7:]
@@ -151,17 +154,46 @@ def parse_data_extentions(body):
             if nrq.isdigit():
                 parsed.update({'nrq': int(nrq)})
     else:
-        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d[0-9A-Z]?))", body)
+        # PHG format: PHGabcd....
+        # RHGR format: RHGabcdr/....
+        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d)([0-9A-Z]\/)?)", body)
         if match:
-            ext, phg = match[0]
+            print(match)
+            ext, phg, phgr = match[0]
             body = body[len(ext):]
-            parsed.update({'phg': phg})
+            parsed.update({
+                'phg': phg,
+                'phg_power': int(phg[0]) ** 2, # watts
+                'phg_height': (10 * (2 ** (ord(phg[1]) - 0x30))) * 0.3048, # in meters
+                'phg_gain': 10 ** (int(phg[2]) / 10.0), # dB
+                })
+
+            phg_dir = int(phg[3])
+            if phg_dir == 0:
+                phg_dir = 'omni'
+            elif phg_dir == 9:
+                phg_dir = 'invalid'
+            else:
+                phg_dir = 45 * phg_dir
+
+            parsed['phg_dir'] = phg_dir
+            # range in km
+            parsed['phg_range'] = sqrt(2 * (parsed['phg_height'] / 0.3048)
+                                       * sqrt((parsed['phg_power'] / 10.0)
+                                               * (parsed['phg_gain'] / 2.0)
+                                              )
+                                       ) * 1.60934
+
+            if phgr:
+                # PHG rate per hour
+                parsed['phg'] += phgr[0]
+                parsed.update({'phg_rate': int(phgr[0], 16)}) # as decimal
         else:
-            match = re.findall(r"^RNG(\d{4})", body)
-            if match:
-                rng = match[0]
-                body = body[7:]
-                parsed.update({'rng': int(rng) * 1.609344})  # miles to km
+                match = re.findall(r"^RNG(\d{4})", body)
+                if match:
+                    rng = match[0]
+                    body = body[7:]
+                    parsed.update({'rng': int(rng) * 1.609344})  # miles to km
 
     return body, parsed
 
