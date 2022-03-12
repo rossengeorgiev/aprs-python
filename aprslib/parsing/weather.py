@@ -63,7 +63,7 @@ def parse_weather_data(body):
     return (body, parsed)
 
 def parse_weather(body):
-    match = re.match("^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
+    match = re.match(r"^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
     if not match:
         raise ParseError("invalid positionless weather report format")
 
