@@ -158,7 +158,6 @@ def parse_data_extentions(body):
         # RHGR format: RHGabcdr/....
         match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d)([0-9A-Z]\/)?)", body)
         if match:
-            print(match)
             ext, phg, phgr = match[0]
             body = body[len(ext):]
             parsed.update({
