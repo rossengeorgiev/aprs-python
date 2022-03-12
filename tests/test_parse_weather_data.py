@@ -204,11 +204,11 @@ class ParseCommentWeather(unittest.TestCase):
     def test_positionless_packet(self):
 
         expected = {
-            'comment': 'wRSW',
+            'comment': '.ABS1.2CDF',
             'format': 'wx',
             'from': 'A',
             'path': [],
-            'raw': 'A>B:_10090556c220s004g005t077r010p020P030h50b09900s5.5wRSW',
+            'raw': 'A>B:_10090556c220s004g005t077r010p020P030h50b09900s5.5.ABS1.2CDF',
             'to': 'B',
             'via': '',
             'wx_raw_timestamp': '10090556',
@@ -226,11 +226,11 @@ class ParseCommentWeather(unittest.TestCase):
             }
         }
 
-        packet = "A>B:_10090556c220s004g005t077r010p020P030h50b09900s5.5wRSW"
+        packet = "A>B:_10090556c220s004g005t077r010p020P030h50b09900s5.5.ABS1.2CDF"
 
         self.assertEqual(expected, parse(packet))
 
-        packet2 = "A>B:_10090556c220s112g   t   r   h  b     wRSW"
+        packet2 = "A>B:_10090556c220s112g   t   r   h  b     .ABS1.2CDF"
         expected['raw'] = packet2
         expected['weather'] = {
             "wind_direction": 220,
@@ -239,7 +239,7 @@ class ParseCommentWeather(unittest.TestCase):
 
         self.assertEqual(expected, parse(packet2))
 
-        packet3 = "A>B:_10090556c220s112g...t...r...p...P...b.....wRSW"
+        packet3 = "A>B:_10090556c220s112g...t...r...p...P...b......ABS1.2CDF"
         expected['raw'] = packet3
         expected['weather'] = {
             "wind_direction": 220,
