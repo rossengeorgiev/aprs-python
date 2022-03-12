@@ -33,7 +33,7 @@ val_map = {
     'r': lambda x: int(x) * rain_multiplier,
     'p': lambda x: int(x) * rain_multiplier,
     'P': lambda x: int(x) * rain_multiplier,
-    'h': lambda x: int(x),
+    'h': lambda x: 100 if int(x) == 0 else int(x),
     'b': lambda x: float(x) / 10,
     'l': lambda x: int(x) + 1000,
     'L': lambda x: int(x),

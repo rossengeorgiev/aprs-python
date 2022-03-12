@@ -113,9 +113,15 @@ class ParseCommentWeather(unittest.TestCase):
 
     def test_humidity(self):
         expected = "", {
-            "humidity": 0.0
+            "humidity": 100
         }
         result = parse_weather_data("h00")
+        self.assertEqual(expected, result)
+
+        expected = "", {
+            "humidity": 1
+        }
+        result = parse_weather_data("h01")
         self.assertEqual(expected, result)
 
         expected = "", {
