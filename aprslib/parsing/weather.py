@@ -33,7 +33,7 @@ val_map = {
     'r': lambda x: int(x) * rain_multiplier,
     'p': lambda x: int(x) * rain_multiplier,
     'P': lambda x: int(x) * rain_multiplier,
-    'h': lambda x: int(x),
+    'h': lambda x: 100 if int(x) == 0 else int(x),
     'b': lambda x: float(x) / 10,
     'l': lambda x: int(x) + 1000,
     'L': lambda x: int(x),
@@ -48,18 +48,22 @@ def parse_weather_data(body):
     body = re.sub(r"^([0-9]{3})/([0-9]{3})", "c\\1s\\2", body)
     body = body.replace('s', 'S', 1)
 
-    data = re.findall(r"([cSgtrpPlLs#]\d{3}|t-\d{2}|h\d{2}|b\d{5}|s\.\d{2}|s\d\.\d)", body)
-    data = map(lambda x: (key_map[x[0]] , val_map[x[0]](x[1:])), data)
+    # match as many parameters from the start, rest is comment
+    data = re.match(r"^([cSgtrpPlLs#][0-9\-\. ]{3}|h[0-9\. ]{2}|b[0-9\. ]{5})+", body)
 
-    parsed.update(dict(data))
-
-    # strip weather data
-    body = re.sub(r"([cSgtrpPlLs#][0-9\-\. ]{3}|h[0-9\. ]{2}|b[0-9\. ]{5})", '', body)
+    if data:
+        data = data.group()
+        # split out data from comment
+        body = body[len(data):]
+        # parse all weather parameters
+        data = re.findall(r"([cSgtrpPlLs#]\d{3}|t-\d{2}|h\d{2}|b\d{5}|s\.\d{2}|s\d\.\d)", data)
+        data = map(lambda x: (key_map[x[0]] , val_map[x[0]](x[1:])), data)
+        parsed.update(dict(data))
 
     return (body, parsed)
 
 def parse_weather(body):
-    match = re.match("^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
+    match = re.match(r"^(\d{8})c[\. \d]{3}s[\. \d]{3}g[\. \d]{3}t[\. \d]{3}", body)
     if not match:
         raise ParseError("invalid positionless weather report format")
 
