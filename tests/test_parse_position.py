@@ -2,9 +2,6 @@ import unittest
 
 from aprslib.parsing import parse_position
 
-wind_multiplier = 0.44704
-mm_multiplier = 0.254
-
 class ParsePositionDataExtAndWeather(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
