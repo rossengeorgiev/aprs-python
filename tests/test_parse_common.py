@@ -256,30 +256,47 @@ class DataExtentionsTC(unittest.TestCase):
             'speed': 100*1.852,
             })
 
-    def test_empty_course_speed(self):
+    def test_course_speed_spaces(self):
         body = "   /   /text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, '/text')
-        self.assertEqual(parsed, {
-            'course': 0,
-            })
+        self.assertEqual(parsed, {})
 
+    def test_course_speed_dots(self):
         body = ".../.../text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, '/text')
-        self.assertEqual(parsed, {
-            'course': 0,
-            })
+        self.assertEqual(parsed, {})
 
+    def test_course_speed_zeros(self):
+        body = "000/000/text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '/text')
+        self.assertEqual(parsed, {})
+
+    def test_course_speed_valid_chars_but_invalid_values(self):
         body = "22./33 /text"
         remaining, parsed = parse_data_extentions(body)
 
         self.assertEqual(remaining, '/text')
-        self.assertEqual(parsed, {
-            'course': 0,
-            })
+        self.assertEqual(parsed, {})
+
+    def test_course_speed_invalid_chars_spd(self):
+        body = "222/33a/text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '222/33a/text')
+        self.assertEqual(parsed, {})
+
+    def test_course_speed_invalid_chars_cse(self):
+        body = "22a/333/text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, '22a/333/text')
+        self.assertEqual(parsed, {})
 
     def test_empty_bearing_nrq(self):
         body = "111/100/   /...text"
@@ -298,6 +315,17 @@ class DataExtentionsTC(unittest.TestCase):
         self.assertEqual(parsed, {
             'course': 111,
             'speed': 100*1.852,
+            })
+
+    def test_course_speed_bearing_nrq_empty_cse_speed(self):
+        body = "000/000/234/345text"
+        remaining, parsed = parse_data_extentions(body)
+
+        self.assertEqual(remaining, 'text')
+        self.assertEqual(parsed, {
+            'course': 0,
+            'bearing': 234,
+            'nrq': 345,
             })
 
     def test_course_speed_bearing_nrq(self):

@@ -136,17 +136,24 @@ def parse_data_extentions(body):
     parsed = {}
 
     # course speed bearing nrq
+    # Page 27 of the spec
     # format: 111/222/333/444text
-    match = re.findall(r"^([0-9 .]{3})/([0-9 .]{3})", body)
+    match = re.findall(r"^([0-9 \.]{3})/([0-9 \.]{3})", body)
     if match:
         cse, spd = match[0]
         body = body[7:]
-        parsed.update({'course': int(cse) if cse.isdigit() and 1 <= int(cse) <= 360 else 0})
-        if spd.isdigit():
+        if cse.isdigit() and cse != "000":
+            parsed.update({'course': int(cse) if 1 <= int(cse) <= 360 else 0})
+        if spd.isdigit() and spd != "000":
             parsed.update({'speed': int(spd)*1.852})
 
-        match = re.findall(r"^/([0-9 .]{3})/([0-9 .]{3})", body)
+        # DF Report format
+        # Page 29 of teh spec
+        match = re.findall(r"^/([0-9 \.]{3})/([0-9 \.]{3})", body)
         if match:
+            # cse=000 means stations is fixed, Page 29 of the spec
+            if cse == '000':
+                parsed.update({'course': 0})
             brg, nrq = match[0]
             body = body[8:]
             if brg.isdigit():
