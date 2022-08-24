@@ -45,24 +45,24 @@ from aprslib.parsing.thirdparty import *
 from aprslib.parsing.weather import *
 
 unsupported_formats = {
-        '#':'raw weather report',
-        '$':'raw gps',
-        '%':'agrelo',
-        '&':'reserved',
-        '(':'unused',
-        ')':'item report',
-        '*':'complete weather report',
-        '+':'reserved',
-        '-':'unused',
-        '.':'reserved',
-        '<':'station capabilities',
-        '?':'general query format',
-        'T':'telemetry report',
-        '[':'maidenhead locator beacon',
-        '\\':'unused',
-        ']':'unused',
-        '^':'unused',
+    '#': 'raw weather report',
+    '$': 'raw gps',
+    '%': 'agrelo',
+    '&': 'reserved',
+    '(': 'unused',
+    ')': 'item report',
+    '*': 'complete weather report',
+    '+': 'reserved',
+    '-': 'unused',
+    '.': 'reserved',
+    '<': 'station capabilities',
+    '?': 'general query format',
+    '[': 'maidenhead locator beacon',
+    '\\': 'unused',
+    ']': 'unused',
+    '^': 'unused',
 }
+
 
 def _unicode_packet(packet):
     # attempt utf-8
@@ -114,7 +114,7 @@ def parse(packet):
 
     parsed = {
         'raw': packet,
-        }
+    }
 
     # parse head
     try:
@@ -149,7 +149,7 @@ def parse(packet):
         parsed.update({
             'format': 'beacon',
             'text': packet_type + body,
-            })
+        })
 
     logger.debug("Parsed ok.")
     return parsed
@@ -208,6 +208,10 @@ def _try_toparse_body(packet_type, body, parsed):
 
         body, result = parse_position(packet_type, body)
 
+    elif packet_type == "T":
+        logger.debug("Attempting to parse as telemetry report")
+
+        body, result = parse_telemetry_report(body)
+
     # we are done
     parsed.update(result)
-
