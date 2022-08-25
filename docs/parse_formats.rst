@@ -278,7 +278,7 @@ Telemetry report
         'vals': [13.21, 0.39, 5.1, 14.94, 36.12],
         'bits': '11111100'
     },
-    'format': 'beacon',
+    'format': 'telemetry-report',
     'text': 'T#165,13.21,0.39,5.10,14.94,36.12,11111100'
     }
 

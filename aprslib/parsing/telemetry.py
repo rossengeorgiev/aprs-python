@@ -101,10 +101,16 @@ def parse_telemetry_config(body):
 
 
 def parse_telemetry_report(text):
-    temp = text.split(",")
     parsed = {}
+    rest = ""
 
-    if len(temp) == 7:
+    match = re.findall("(^#\d{3},(\d+(\.\d+)?,){5}[01]{8}$)", text)
+
+    if match:
+        logger.debug("Attempting to parse telemetry-message packet")
+
+        temp = text.split(",")
+        parsed.update({'format': 'telemetry-report'})
 
         seq = int(temp[0].replace('#', ''))
         values = list(map(float, temp[1:6]))
@@ -116,5 +122,7 @@ def parse_telemetry_report(text):
                 'bits': temp[6]
             }
         })
+    else:
+        rest = text
 
-    return '', parsed
+    return rest, parsed
