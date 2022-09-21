@@ -24,19 +24,19 @@ def parse_comment_telemetry(text):
 
         temp = [0] * 7
         for i in range(7):
-            temp[i] = base91.to_decimal(telemetry[i * 2:i * 2 + 2])
+            temp[i] = base91.to_decimal(telemetry[i*2:i*2+2])
 
         parsed.update({
             'telemetry': {
                 'seq': temp[0],
                 'vals': temp[1:6]
-            }
-        })
+                }
+            })
 
         if temp[6] != '':
             parsed['telemetry'].update({
                 'bits': "{0:08b}".format(temp[6] & 0xFF)[::-1]
-            })
+                })
 
     return (text, parsed)
 
@@ -63,14 +63,14 @@ def parse_telemetry_config(body):
 
             parsed.update({
                 't%s' % form: defvals
-            })
+                })
         elif form == "EQNS":
             eqns = body.rstrip().split(',')[:15]
             teqns = [0, 1, 0] * 5
 
             for idx, val in enumerate(eqns):
                 if not re.match(r"^([-]?\d*\.?\d+|)$", val):
-                    raise ParseError("value at %d is not a number in %s" % (idx + 1, form))
+                    raise ParseError("value at %d is not a number in %s" % (idx+1, form))
                 else:
                     try:
                         val = int(val)
@@ -80,11 +80,11 @@ def parse_telemetry_config(body):
                     teqns[idx] = val
 
             # group values in 5 list of 3
-            teqns = [teqns[i * 3:(i + 1) * 3] for i in range(5)]
+            teqns = [teqns[i*3:(i+1)*3] for i in range(5)]
 
             parsed.update({
                 't%s' % form: teqns
-            })
+                })
         elif form == "BITS":
             match = re.findall(r"^([01]{8}),(.{0,23})$", body.rstrip())
             if not match:
@@ -95,7 +95,7 @@ def parse_telemetry_config(body):
             parsed.update({
                 't%s' % form: bits,
                 'title': title.strip(' ')
-            })
+                })
 
     return (body, parsed)
 
