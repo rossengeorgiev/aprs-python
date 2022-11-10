@@ -6,6 +6,7 @@ from aprslib.parsing import logger
 __all__ = [
         'parse_comment_telemetry',
         'parse_telemetry_config',
+        'parse_telemetry_report',
         ]
 
 
@@ -98,3 +99,20 @@ def parse_telemetry_config(body):
 
     return (body, parsed)
 
+def parse_telemetry_report(body):
+    parsed = {}
+
+    match = re.findall(r"^#(MIC,?|[0-9]+,)(.*)$", body)
+    if match:
+        logger.debug("Attempting to parse telemetry-report packet")
+
+        parsed.update({'format': 'telemetry-report'})
+
+        seq, data = match[0]
+        seq = seq[:-1] if (seq.endswith(",")) else seq
+        data = data.split(",")
+        parsed.update({
+            'tValues': ([seq] + data),
+        })
+
+    return (body, parsed)

@@ -57,7 +57,6 @@ unsupported_formats = {
         '.':'reserved',
         '<':'station capabilities',
         '?':'general query format',
-        'T':'telemetry report',
         '[':'maidenhead locator beacon',
         '\\':'unused',
         ']':'unused',
@@ -207,6 +206,12 @@ def _try_toparse_body(packet_type, body, parsed):
           0 <= body.find('!') < 40):  # page 28 of spec (PDF)
 
         body, result = parse_position(packet_type, body)
+
+    # Telemetry report
+    elif packet_type == 'T':
+        logger.debug("Packet is a telemetry report")
+
+        body, result = parse_telemetry_report(body)
 
     # we are done
     parsed.update(result)
