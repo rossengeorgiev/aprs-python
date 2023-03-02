@@ -339,7 +339,7 @@ class IS(object):
                    and not blocking
                    and len(self.buf) == 0):
                         break
-                elif ("WinError 10035" in str(e) 
+                elif ("WinError 10035" in str(e)  
                         and not blocking 
                         and "win32" in sys.platform):
                     break
