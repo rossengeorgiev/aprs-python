@@ -22,6 +22,7 @@ import socket
 import select
 import time
 import logging
+import sys
 
 from aprslib import __version__, string_type, is_py3
 from aprslib.parsing import parse
@@ -338,6 +339,10 @@ class IS(object):
                    and not blocking
                    and len(self.buf) == 0):
                         break
+                elif ("WinError 10035" in str(e)  
+                        and not blocking 
+                        and "win32" in sys.platform):
+                    break
                 else:
                     self.logger.error("socket error on recv(): %s" % str(e))
 
