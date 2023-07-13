@@ -7,8 +7,10 @@ __all__ = [
     ]
 
 # constants
-wind_multiplier = 0.44704
-rain_multiplier = 0.254
+# wind is in miles per hour
+wind_multiplier = 1
+# Spec 1.1 Rain is in hundredths of an inch.
+rain_multiplier = 0.01
 
 key_map = {
     'g': 'wind_gust',

@@ -63,10 +63,19 @@ def parse_position(packet_type, body):
         # attempt to parse winddir/speed
         # Page 92 of the spec
         body, result = parse_data_extentions(body)
-        parsed.update(result)
+        wind_speed = result.get("speed")
+        wind_direction = result.get("course")
 
         logger.debug("Attempting to parse weather report from comment")
         body, result = parse_weather_data(body)
+        if wind_speed:
+            result.update({
+                'wind_speed': wind_speed,
+            })
+        if wind_direction:
+            result.update({
+                'wind_direction': wind_direction,
+            })
         parsed.update({
             'comment': body.strip(' '),
             'weather': result,

@@ -3,8 +3,8 @@ import unittest
 from aprslib.parsing import parse_weather_data
 from aprslib.parsing import parse
 
-wind_multiplier = 0.44704
-mm_multiplier = 0.254
+wind_multiplier = 1
+mm_multiplier = 0.010
 
 class ParseCommentWeather(unittest.TestCase):
     def setUp(self):
