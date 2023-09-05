@@ -292,7 +292,7 @@ class IS(object):
                 raise LoginError("Server responded with empty callsign???")
             if callsign != self.callsign:
                 raise LoginError("Server: %s" % test)
-            if status != "verified," and self.passwd != "-1":
+            if not status.startswith("verified") and self.passwd != "-1":
                 raise LoginError("Password is incorrect")
 
             if self.passwd == "-1":
