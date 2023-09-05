@@ -3,7 +3,7 @@ import re
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
-from aprslib.parsing.common import parse_timestamp, parse_comment
+from aprslib.parsing.common import parse_timestamp, parse_comment, parse_data_extentions
 from aprslib.parsing.weather import parse_weather_data
 
 __all__ = [
@@ -60,6 +60,11 @@ def parse_position(packet_type, body):
     # check comment for weather information
     # Page 62 of the spec
     if parsed['symbol'] == '_':
+        # attempt to parse winddir/speed
+        # Page 92 of the spec
+        body, result = parse_data_extentions(body)
+        parsed.update(result)
+
         logger.debug("Attempting to parse weather report from comment")
         body, result = parse_weather_data(body)
         parsed.update({

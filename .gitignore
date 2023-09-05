@@ -3,3 +3,5 @@
 *.pyc
 dist
 *.egg-info
+env3
+env2
