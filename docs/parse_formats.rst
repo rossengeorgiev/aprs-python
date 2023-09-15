@@ -257,32 +257,6 @@ Regular
      'to': u'TOCALL',
      'via': ''}
 
-
-Telemetry report
------------------------
-
-
-.. code:: python
-
-    >>> aprslib.parse("FROMCALL>APDW16,WIDE1-1,qAR,TOCALL:T#165,13.21,0.39,5.10,14.94,36.12,11111100")
-
-    {
-    'raw': 'FROMCALL>APDW16,WIDE1-1,qAR,TOCALL:T#165,13.21,0.39,5.10,14.94,36.12,11111100',
-    'from': 'FROMCALL',
-    'to': 'APDW16',
-    'path': ['WIDE1-1', 'qAR', 'TOCALL'],
-    'via': 'TOCALL',
-    'telemetry':
-    {
-        'seq': 165,
-        'vals': [13.21, 0.39, 5.1, 14.94, 36.12],
-        'bits': '11111100'
-    },
-    'format': 'telemetry-report',
-    'text': 'T#165,13.21,0.39,5.10,14.94,36.12,11111100'
-    }
-
-
 Telemetry configuration
 -----------------------
 
@@ -321,6 +295,4 @@ Telemetry configuration
      'tEQNS': [[0, 0.075, 0], [0, 10, 0], [0, 10, 0], [0, 1, 0], [0, 0, 0]],
      'to': 'TOCALL',
      'via': ''}
-
-
 

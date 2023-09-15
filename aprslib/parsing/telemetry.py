@@ -4,10 +4,9 @@ from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
 
 __all__ = [
-    'parse_comment_telemetry',
-    'parse_telemetry_config',
-    'parse_telemetry_report'
-]
+        'parse_comment_telemetry',
+        'parse_telemetry_config',
+        ]
 
 
 def parse_comment_telemetry(text):
@@ -99,30 +98,3 @@ def parse_telemetry_config(body):
 
     return (body, parsed)
 
-
-def parse_telemetry_report(text):
-    parsed = {}
-    rest = ""
-
-    match = re.findall(r"(^#\d{3},(\d+(\.\d+)?,){5}[01]{8}$)", text)
-
-    if match:
-        logger.debug("Attempting to parse telemetry-message packet")
-
-        temp = text.split(",")
-        parsed.update({'format': 'telemetry-report'})
-
-        seq = int(temp[0].replace('#', ''))
-        values = list(map(float, temp[1:6]))
-
-        parsed.update({
-            'telemetry': {
-                'seq': seq,
-                'vals': values,
-                'bits': temp[6]
-            }
-        })
-    else:
-        rest = text
-
-    return rest, parsed

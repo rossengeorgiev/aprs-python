@@ -30,7 +30,7 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
                 'wind_gust': 0.0,
                 'temperature': 18.88888888888889,
                 'rain_1h': 0.0,
-                'rain_24h': 0.0,
+                'rain_24h': 0.0
             }
         }
 
@@ -50,14 +50,14 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
             'symbol_table': '/',
             'latitude': 49.05833333333333,
             'longitude': -72.02916666666667,
+            'course': 90,
+            'speed': 1*1.852,
             'comment': '...dUII',
             'weather': {
                 'wind_gust': 0.0,
                 'temperature': 18.88888888888889,
                 'rain_1h': 0.0,
-                'rain_24h': 0.0,
-                'wind_direction': 90,
-                'wind_speed': 1,
+                'rain_24h': 0.0
             }
         }
 
@@ -77,13 +77,13 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
             'symbol_table': '/',
             'latitude': 49.05833333333333,
             'longitude': -72.02916666666667,
+            'course': 90,
             'comment': '...dUII',
             'weather': {
                 'wind_gust': 0.0,
                 'temperature': 18.88888888888889,
                 'rain_1h': 0.0,
-                'rain_24h': 0.0,
-                'wind_direction': 90
+                'rain_24h': 0.0
             }
         }
 
@@ -103,13 +103,13 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
             'symbol_table': '/',
             'latitude': 49.05833333333333,
             'longitude': -72.02916666666667,
+            'speed': 1*1.852,
             'comment': '...dUII',
             'weather': {
                 'wind_gust': 0.0,
                 'temperature': 18.88888888888889,
                 'rain_1h': 0.0,
-                'rain_24h': 0.0,
-                'wind_speed': 1,
+                'rain_24h': 0.0
             }
         }
 
@@ -153,13 +153,13 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
             'symbol_table': '/',
             'latitude': 49.05833333333333,
             'longitude': -72.02916666666667,
+            'speed': 1*1.852,
             'comment': '...dUII',
             'weather': {
                 'wind_gust': 0.0,
                 'temperature': 18.88888888888889,
                 'rain_1h': 0.0,
-                'rain_24h': 0.0,
-                'wind_speed': 1,
+                'rain_24h': 0.0
             }
         }
 

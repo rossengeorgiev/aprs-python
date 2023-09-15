@@ -253,7 +253,7 @@ class DataExtentionsTC(unittest.TestCase):
         self.assertEqual(remaining, '/text')
         self.assertEqual(parsed, {
             'course': 123,
-            'speed': 100,
+            'speed': 100*1.852,
             })
 
     def test_course_speed_spaces(self):
@@ -305,7 +305,7 @@ class DataExtentionsTC(unittest.TestCase):
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
             'course': 111,
-            'speed': 100,
+            'speed': 100*1.852,
             })
 
         body = "111/100/2  /33.text"
@@ -314,7 +314,7 @@ class DataExtentionsTC(unittest.TestCase):
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
             'course': 111,
-            'speed': 100,
+            'speed': 100*1.852,
             })
 
     def test_course_speed_bearing_nrq_empty_cse_speed(self):
@@ -335,7 +335,7 @@ class DataExtentionsTC(unittest.TestCase):
         self.assertEqual(remaining, 'text')
         self.assertEqual(parsed, {
             'course': 123,
-            'speed': 100,
+            'speed': 100*1.852,
             'bearing': 234,
             'nrq': 345,
             })

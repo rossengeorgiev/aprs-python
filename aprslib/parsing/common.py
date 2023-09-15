@@ -138,7 +138,6 @@ def parse_data_extentions(body):
     # course speed bearing nrq
     # Page 27 of the spec
     # format: 111/222/333/444text
-    # Speed is in mph
     match = re.findall(r"^([0-9 \.]{3})/([0-9 \.]{3})", body)
     if match:
         cse, spd = match[0]
@@ -146,7 +145,7 @@ def parse_data_extentions(body):
         if cse.isdigit() and cse != "000":
             parsed.update({'course': int(cse) if 1 <= int(cse) <= 360 else 0})
         if spd.isdigit() and spd != "000":
-            parsed.update({'speed': int(spd)})
+            parsed.update({'speed': int(spd)*1.852})
 
         # DF Report format
         # Page 29 of teh spec
