@@ -72,6 +72,13 @@ def parse_position(packet_type, body):
             result.update({
                 'wind_speed': wind_speed,
             })
+        elif wind_direction:
+            # Since result.get("speed") now returns None if speed is 0,
+            # set wind speed as zero if wind direction has also been reported
+            # This is consistent with the behavior in 0.7.1 and earlier.
+            result.update({
+                'wind_speed': 0,
+            })
         if wind_direction:
             result.update({
                 'wind_direction': wind_direction,

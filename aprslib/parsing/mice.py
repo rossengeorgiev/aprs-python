@@ -32,6 +32,167 @@ MTYPE_TABLE_CUSTOM = {
     "000": "Emergency",
     }
 
+# Mic-e known radio type prefix list
+RADIO_TYPE_PREFIXES = [ '>', ']', '`', '\'']
+
+# Mic-e known radio make/model table
+RADIO_MODELS = [
+        {
+            'p': '`',
+            's': '(5',
+            'b': 'Anytone',
+            'm': 'D578UV',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '(8',
+            'b': 'Anytone',
+            'm': 'D878UV',
+            't': 'HT'
+        },
+        {
+            'p': '\'',
+            's': '|3',
+            'b': 'Byonics',
+            'm': 'TinyTrack3',
+            't': 'Tracker'
+        },
+        {
+            'p': '\'',
+            's': '|4',
+            'b': 'Byonics',
+            'm': 'TinyTrack4',
+            't': 'Tracker'
+        },
+        {
+            'p': 'T',
+            's': '^v',
+            'b': 'HinzTec',
+            'm': 'Anyfrog',
+            't': 'Tracker'
+        },
+        {
+            'p': '>',
+            's': 'v',
+            'b': 'Kenwood',
+            'm': 'TH-D7A(G)',
+            't': 'HT'
+        },
+        {
+            'p': ']',
+            's': '',
+            'b': 'Kenwood',
+            'm': 'TM-D700',
+            't': 'Mobile'
+        },
+        {
+            'p': ']',
+            's': '=',
+            'b': 'Kenwood',
+            'm': 'TM-D710',
+            't': 'Mobile'
+        },
+        {
+            'p': '>',
+            's': '=',
+            'b': 'Kenwood',
+            'm': 'TH-D72',
+            't': 'HT'
+        },
+        {
+            'p': '>',
+            's': '^',
+            'b': 'Kenwood',
+            'm': 'TH-D74',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_ ',
+            'b': 'Yaesu',
+            'm': 'VX-8',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_#',
+            'b': 'Yaesu',
+            'm': 'VX-8G',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_$',
+            'b': 'Yaesu',
+            'm': 'FT1D',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_(',
+            'b': 'Yaesu',
+            'm': 'FT2D',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_0',
+            'b': 'Yaesu',
+            'm': 'FT3D',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_3',
+            'b': 'Yaesu',
+            'm': 'FT5D(R)',
+            't': 'HT'
+        },
+        {
+            'p': '`',
+            's': '_)',
+            'b': 'Yaesu',
+            'm': 'FTM-100D',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '_"',
+            'b': 'Yaesu',
+            'm': 'FTM-350',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '_2',
+            'b': 'Yaesu',
+            'm': 'FTM-200DR',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '_1',
+            'b': 'Yaesu',
+            'm': 'FTM-300DR',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '_%',
+            'b': 'Yaesu',
+            'm': 'FTM-400DR',
+            't': 'Mobile'
+        },
+        {
+            'p': '`',
+            's': '_4',
+            'b': 'Yaesu',
+            'm': 'FTM-500DR',
+            't': 'Mobile'
+        }
+    ]
+
 # Mic-encoded packet
 #
 # 'lllc/s$/.........         Mic-E no message capability
@@ -214,7 +375,18 @@ def parse_mice(dstcall, body):
         # parse DAO extention
         body = parse_dao(body, parsed)
 
+        # Look for Mic-Eradio data in the comment
+        # See http://www.aprs.org/aprs12/mic-e-types.txt for spec details
+        comment = body.strip(' ')
+        prefix = RADIO_TYPE_PREFIXES.index(comment[0])
+        if (prefix):
+            # Find a matching suffix
+            for i in range(len(RADIO_MODELS)):
+                if comment[-(len(RADIO_MODELS[i]["s"])):] in RADIO_MODELS[i]["s"] and RADIO_TYPE_PREFIXES[prefix] == RADIO_MODELS[i]["p"]:
+                    parsed.update({'mradio_brand': RADIO_MODELS[i]["b"], 'mradio_model': RADIO_MODELS[i]["m"], 'mradio_type': RADIO_MODELS[i]["t"]})
+                    comment = comment.lstrip(RADIO_MODELS[i]["p"]).rstrip(RADIO_MODELS[i]["s"])
+
         # rest is a comment
-        parsed.update({'comment': body.strip(' ')})
+        parsed.update({'comment': comment.strip(' ')})
 
     return ('', parsed)
