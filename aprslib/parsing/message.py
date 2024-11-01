@@ -92,6 +92,8 @@ def parse_message(body):
         match = re.findall(r"^(ack|rej)([A-Za-z0-9]{2})}([A-Za-z0-9]{2})?$", body)
         if match:
             parsed['response'], parsed['msgNo'], ackMsgNo = match[0]
+            parsed['msgNo101'] = parsed['msgNo'] + "}" + ackMsgNo
+            parsed['isReplyAck'] = True
             if ackMsgNo:
                 parsed['ackMsgNo'] = ackMsgNo
             break
@@ -101,6 +103,7 @@ def parse_message(body):
         match = re.findall(r"^(ack|rej)([A-Za-z0-9]{1,5})$", body)
         if match:
             parsed['response'], parsed['msgNo'] = match[0]
+            parsed['msgNo101'] = parsed['msgNo']
             break
 
         # regular message body parser
@@ -113,8 +116,11 @@ def parse_message(body):
         match = re.findall(r"{([A-Za-z0-9]{2})}([A-Za-z0-9]{2})?$", body)
         if match:
             msgNo, ackMsgNo = match[0]
+            msgNo101 = msgNo + "}" + ackMsgNo
             parsed['message_text'] = body[:len(body) - 4 - len(ackMsgNo)].strip(' ')
             parsed['msgNo'] = msgNo
+            parsed['msgNo101'] = msgNo101
+            parsed['isReplyAck'] = True
             if ackMsgNo:
                 parsed['ackMsgNo'] = ackMsgNo
             break
@@ -126,6 +132,7 @@ def parse_message(body):
             msgNo = match[0]
             parsed['message_text'] = body[:len(body) - 1 - len(msgNo)].strip(' ')
             parsed['msgNo'] = msgNo
+            parsed['msgNo101'] = msgNo
             break
 
         # break free from the eternal 'while'

@@ -23,6 +23,7 @@ class AckRejTests(unittest.TestCase):
             'format': 'message',
             'addresse': 'WXBOT',
             'msgNo': '123',
+            'msgNo101': '123',
             'response': 'rej'
         }
 
@@ -37,6 +38,8 @@ class AckRejTests(unittest.TestCase):
             'addresse': 'WXBOT',
             'response': 'ack',
             'msgNo': 'AB',
+            'msgNo101': 'AB}',
+            'isReplyAck': True,
         }
 
         self.assertEqual(unparsed, '')
@@ -50,7 +53,9 @@ class AckRejTests(unittest.TestCase):
             'addresse': 'WXBOT',
             'response': 'ack',
             'msgNo': 'AB',
+            'msgNo101': 'AB}CD',
             'ackMsgNo': 'CD',
+            'isReplyAck': True,
         }
 
         self.assertEqual(unparsed, '')
@@ -79,6 +84,7 @@ class MessageTestBodyTests(unittest.TestCase):
             'addresse': 'WXBOT',
             'message_text': 'HelloWorld',
             'msgNo': 'ABCDE',
+            'msgNo101': 'ABCDE',
         }
 
         self.assertEqual(unparsed, '')
@@ -92,6 +98,8 @@ class MessageTestBodyTests(unittest.TestCase):
             'addresse': 'WXBOT',
             'message_text': 'HelloWorld',
             'msgNo': 'AB',
+            'msgNo101': 'AB}',
+            'isReplyAck': True,
         }
 
         self.assertEqual(unparsed, '')
@@ -105,7 +113,9 @@ class MessageTestBodyTests(unittest.TestCase):
             'addresse': 'WXBOT',
             'message_text': 'HelloWorld',
             'msgNo': 'AB',
+            'msgNo101': 'AB}CD',
             'ackMsgNo': 'CD',
+            'isReplyAck': True,
         }
 
         self.assertEqual(unparsed, '')
