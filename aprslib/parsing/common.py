@@ -215,7 +215,7 @@ def parse_comment_altitude(body):
 
 
 def parse_dao(body, parsed):
-    match = re.findall("^(.*)\!([\x21-\x7b])([\x20-\x7b]{2})\!(.*?)$", body)
+    match = re.findall(r"^(.*)\!([\x21-\x7b])([\x20-\x7b]{2})\!(.*?)$", body)
     if match:
         body, daobyte, dao, rest = match[0]
         body += rest
