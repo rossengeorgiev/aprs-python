@@ -338,6 +338,10 @@ class IS(object):
                    and not blocking
                    and len(self.buf) == 0):
                         break
+                # ignore error when blocking=False and recv() times out
+                # just means we did not get any frames
+                elif ('timed out' in str(e)) and not blocking:
+                    break
                 else:
                     self.logger.error("socket error on recv(): %s" % str(e))
 
