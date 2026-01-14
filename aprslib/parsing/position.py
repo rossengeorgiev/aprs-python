@@ -15,11 +15,23 @@ __all__ = [
 def parse_position(packet_type, body):
     parsed = {}
 
-    if packet_type not in '!=/@;':
-        _, body = body.split('!', 1)
-        packet_type = '!'
+    # Handle item reports first (before the ! split logic)
+    if packet_type == ')':
+        logger.debug("Attempting to parse item report format")
+        # Item name is 3-9 characters, followed by ! (live) or _ (kill)
+        # Item name can include spaces (use [ -~] instead of [!-~] to include space)
+        match = re.findall(r"^([ -~]{3,9})([!_])", body)
+        if match:
+            name, flag = match[0]
+            parsed.update({
+                'item_name': name,
+                'alive': flag == '!',
+                })
 
-    if packet_type == ';':
+            body = body[len(name) + 1:]
+        else:
+            raise ParseError("invalid item report format")
+    elif packet_type == ';':
         logger.debug("Attempting to parse object report format")
         match = re.findall(r"^([ -~]{9})(\*|_)", body)
         if match:
@@ -32,11 +44,14 @@ def parse_position(packet_type, body):
             body = body[10:]
         else:
             raise ParseError("invalid format")
+    elif packet_type not in '!=/@':
+        _, body = body.split('!', 1)
+        packet_type = '!'
     else:
         parsed.update({"messagecapable": packet_type in '@='})
 
     # decode timestamp
-    if packet_type in "/@;":
+    if packet_type in "/@;)":
         body, result = parse_timestamp(body, packet_type)
         parsed.update(result)
 
@@ -79,6 +94,11 @@ def parse_position(packet_type, body):
         parsed.update({
             'object_format': parsed['format'],
             'format': 'object',
+            })
+    elif packet_type == ')':
+        parsed.update({
+            'item_format': parsed['format'],
+            'format': 'item',
             })
 
     return ('', parsed)
@@ -137,8 +157,8 @@ def parse_compressed(body):
 def parse_normal(body):
     parsed = {}
 
-    match = re.findall(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{2})([NnSs])([\/\\0-9A-Z])"
-                       r"(\d{3})([0-9 ]{2}\.[0-9 ]{2})([EeWw])([\x21-\x7e])(.*)$", body)
+    match = re.findall(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{1,2})([NnSs])([\/\\0-9A-Z])"
+                       r"(\d{3})([0-9 ]{2}\.[0-9 ]{1,2})([EeWw])([\x21-\x7e])(.*)$", body)
 
     if match:
         parsed.update({'format': 'uncompressed'})
@@ -156,9 +176,12 @@ def parse_normal(body):
         ) = match[0]
 
         # position ambiguity
-        posambiguity = lat_min.count(' ')
+        # Strip trailing spaces before counting (trailing spaces are not part of ambiguity)
+        lat_min_stripped = lat_min.rstrip(' ')
+        lon_min_stripped = lon_min.rstrip(' ')
+        posambiguity = lat_min_stripped.count(' ')
 
-        if posambiguity != lon_min.count(' '):
+        if posambiguity != lon_min_stripped.count(' '):
             raise ParseError("latitude and longitude ambiguity mismatch")
 
         parsed.update({'posambiguity': posambiguity})
@@ -168,8 +191,9 @@ def parse_normal(body):
             lat_min = "30"
             lon_min = "30"
         else:
-            lat_min = lat_min.replace(' ', '5', 1)
-            lon_min = lon_min.replace(' ', '5', 1)
+            # Use stripped versions for ambiguity replacement
+            lat_min = lat_min_stripped.replace(' ', '5', 1)
+            lon_min = lon_min_stripped.replace(' ', '5', 1)
 
         # validate longitude and latitude
 
