@@ -1,7 +1,7 @@
 import unittest
 import string
 from random import randint, randrange, sample
-from datetime import datetime
+from datetime import datetime, timezone
 
 from aprslib import base91
 from aprslib.parsing.common import *
@@ -178,8 +178,8 @@ class TimestampTC(unittest.TestCase):
             })
 
     def test_timestamp_valid(self):
-        date = datetime.utcnow()
-        td = date - datetime(1970, 1, 1)
+        date = datetime.now(timezone.utc)
+        td = date - datetime(1970, 1, 1, tzinfo=timezone.utc)
         timestamp = int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6)
 
         # hhmmss format

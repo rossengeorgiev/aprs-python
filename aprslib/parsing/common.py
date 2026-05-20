@@ -1,6 +1,6 @@
 import re
 from math import sqrt
-from datetime import datetime
+from datetime import datetime, timezone
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
@@ -80,7 +80,7 @@ def parse_timestamp(body, packet_type=''):
     match = re.findall(r"^((\d{6})(.))$", body[0:7])
     if match:
         rawts, ts, form = match[0]
-        utc = datetime.utcnow()
+        utc = datetime.now(timezone.utc)
 
         timestamp = 0
 
