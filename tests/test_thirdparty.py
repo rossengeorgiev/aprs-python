@@ -27,15 +27,16 @@ class thirdpartyTC(unittest.TestCase):
             self.fail("empty status packet shouldn't raise exception")
 
     def test_unsupported_formats_raising(self):
+        # Only test DTIs that are actually in the unsupported_formats dict
+        # Many former "unsupported" types now have parsers (Peet Bros, query, etc.)
+        for packet_type in '%&(-+.]^':
+            packet = "A>B:}C>D:%saaa" % packet_type
+            with self.assertRaises(UnknownFormat, msg="Expected UnknownFormat for DTI '%s'" % packet_type):
+                parse(packet)
+        # Backslash requires escaping
+        packet = "A>B:}C>D:\\aaa"
         with self.assertRaises(UnknownFormat):
-            for packet_type in '#$%)*,<?T[_{':
-                packet = "A>B:}C>D:%saaa" % packet_type
-
-                try:
-                    parse(packet)
-                except UnknownFormat as exp:
-                    self.assertEqual(exp.packet, packet)
-                    raise
+            parse(packet)
 
     def test_valid_thirdparty_msg(self):
         packet = "A-1>APRS,B-2,WIDE1*:}C>APU25N,TCPIP,A-1*::DEF      :ack56"

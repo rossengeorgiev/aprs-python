@@ -1,0 +1,24 @@
+line-length = 120
+target-version = "py39"
+
+[lint]
+# Start with just error-level checks; tighten over time
+select = ["E", "F", "W"]
+ignore = [
+    "E501",   # line too long (existing code)
+    "E402",   # module level import not at top (existing pattern)
+    "E722",   # bare except (existing code)
+    "F403",   # star import used (existing pattern in __init__.py)
+    "F405",   # may be undefined from star import (consequence of F403)
+    "F821",   # undefined name (Python 2 compat: unicode, long, xrange)
+    "F811",   # redefinition of unused name (duplicate test method)
+    "W293",   # whitespace before ':' (existing code)
+    "W291",   # trailing whitespace
+    "W605",   # invalid escape sequence (existing code)
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

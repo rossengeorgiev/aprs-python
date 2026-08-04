@@ -1,10 +1,10 @@
-import logging
 import re
 from aprslib import base91
 from aprslib.exceptions import ParseError
 from aprslib.parsing import logger
-from aprslib.parsing.common import parse_timestamp, parse_comment, parse_data_extentions
+from aprslib.parsing.common import parse_timestamp, parse_comment, parse_data_extentions, parse_area_data_extension, parse_signpost_comment
 from aprslib.parsing.weather import parse_weather_data
+from aprslib.parsing.nws import parse_nws_alert
 
 __all__ = [
         'parse_position',
@@ -15,11 +15,23 @@ __all__ = [
 def parse_position(packet_type, body):
     parsed = {}
 
-    if packet_type not in '!=/@;':
-        _, body = body.split('!', 1)
-        packet_type = '!'
+    # Handle item reports first (before the ! split logic)
+    if packet_type == ')':
+        logger.debug("Attempting to parse item report format")
+        # Item name is 3-9 characters, followed by ! (live) or _ (kill)
+        # Item name excludes ! and _ (they are terminators)
+        match = re.findall(r"^([^!_]{3,9})([!_])", body)
+        if match:
+            name, flag = match[0]
+            parsed.update({
+                'item_name': name,
+                'alive': flag == '!',
+                })
 
-    if packet_type == ';':
+            body = body[len(name) + 1:]
+        else:
+            raise ParseError("invalid item report format")
+    elif packet_type == ';':
         logger.debug("Attempting to parse object report format")
         match = re.findall(r"^([ -~]{9})(\*|_)", body)
         if match:
@@ -32,11 +44,14 @@ def parse_position(packet_type, body):
             body = body[10:]
         else:
             raise ParseError("invalid format")
+    elif packet_type not in '!=/@*':
+        _, body = body.split('!', 1)
+        packet_type = '!'
     else:
         parsed.update({"messagecapable": packet_type in '@='})
 
     # decode timestamp
-    if packet_type in "/@;":
+    if packet_type in "/@;)*":
         body, result = parse_timestamp(body, packet_type)
         parsed.update(result)
 
@@ -72,13 +87,33 @@ def parse_position(packet_type, body):
             'weather': result,
             })
     else:
-        # decode comment
-        parse_comment(body, parsed)
+        # Check for area object (symbol \l)
+        if parsed.get('symbol_table') == '\\' and parsed.get('symbol') == 'l':
+            body, area_result = parse_area_data_extension(body)
+            parsed.update(area_result)
+            parsed.update({'comment': body.strip(' ')})
+        elif parsed.get('symbol_table') == '\\' and parsed.get('symbol') == 'm':
+            body, signpost_result = parse_signpost_comment(body)
+            parsed.update(signpost_result)
+            parsed.update({'comment': body.strip(' ')})
+        else:
+            # decode comment
+            parse_comment(body, parsed)
 
     if packet_type == ';':
         parsed.update({
             'object_format': parsed['format'],
             'format': 'object',
+            })
+        # Check for NWS alert in comment
+        comment = parsed.get('comment', '')
+        nws_result = parse_nws_alert(comment)
+        if nws_result:
+            parsed['nws_alert'] = nws_result
+    elif packet_type == ')':
+        parsed.update({
+            'item_format': parsed['format'],
+            'format': 'item',
             })
 
     return ('', parsed)
@@ -120,7 +155,8 @@ def parse_compressed(body):
             parsed.update({'altitude': (1.002 ** (c1 * 91 + s1)) * 0.3048})
         elif c1 >= 0 and c1 <= 89:
             parsed.update({'course': 360 if c1 == 0 else c1 * 4})
-            parsed.update({'speed': (1.08 ** s1 - 1) * 1.852})  # mul = convert knts to kmh
+            speed_knots = 1.08 ** s1 - 1
+            parsed.update({'speed': speed_knots * 1.852})  # knots to km/h
         elif c1 == 90:
             parsed.update({'radiorange': (2 * 1.08 ** s1) * 1.609344})  # mul = convert mph to kmh
 
@@ -137,8 +173,8 @@ def parse_compressed(body):
 def parse_normal(body):
     parsed = {}
 
-    match = re.findall(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{2})([NnSs])([\/\\0-9A-Z])"
-                       r"(\d{3})([0-9 ]{2}\.[0-9 ]{2})([EeWw])([\x21-\x7e])(.*)$", body)
+    match = re.findall(r"^(\d{2})([0-9 ]{2}\.[0-9 ]{1,2})([NnSs])([\/\\0-9A-Z])"
+                       r"(\d{3})([0-9 ]{2}\.[0-9 ]{1,2})([EeWw])([\x21-\x7e])(.*)$", body)
 
     if match:
         parsed.update({'format': 'uncompressed'})
@@ -156,9 +192,12 @@ def parse_normal(body):
         ) = match[0]
 
         # position ambiguity
-        posambiguity = lat_min.count(' ')
+        # Strip trailing spaces before counting (trailing spaces are not part of ambiguity)
+        lat_min_stripped = lat_min.rstrip(' ')
+        lon_min_stripped = lon_min.rstrip(' ')
+        posambiguity = lat_min_stripped.count(' ')
 
-        if posambiguity != lon_min.count(' '):
+        if posambiguity != lon_min_stripped.count(' '):
             raise ParseError("latitude and longitude ambiguity mismatch")
 
         parsed.update({'posambiguity': posambiguity})
@@ -168,8 +207,9 @@ def parse_normal(body):
             lat_min = "30"
             lon_min = "30"
         else:
-            lat_min = lat_min.replace(' ', '5', 1)
-            lon_min = lon_min.replace(' ', '5', 1)
+            # Use stripped versions for ambiguity replacement
+            lat_min = lat_min_stripped.replace(' ', '5', 1)
+            lon_min = lon_min_stripped.replace(' ', '5', 1)
 
         # validate longitude and latitude
 

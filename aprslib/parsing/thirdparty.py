@@ -1,5 +1,3 @@
-import re
-from aprslib.parsing.__init__ import parse
 from aprslib.exceptions import UnknownFormat
 from aprslib.exceptions import ParseError
 
@@ -10,10 +8,14 @@ __all__ = [
 def parse_thirdparty(body):
     parsed = {'format':'thirdparty'}
 
+    # Import parse here to avoid circular import
+    # (aprslib.parsing.__init__ imports us, we need its parse function)
+    from aprslib.parsing import parse
+
     # Parse sub-packet
     try:
         subpacket = parse(body)
-    except (UnknownFormat,ParseError) as ukf:
+    except (UnknownFormat,ParseError):
         raise
 
     parsed.update({'subpacket':subpacket})

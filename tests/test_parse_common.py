@@ -3,7 +3,6 @@ import string
 from random import randint, randrange, sample
 from datetime import datetime
 
-from aprslib import base91
 from aprslib.parsing.common import *
 from aprslib.exceptions import ParseError
 

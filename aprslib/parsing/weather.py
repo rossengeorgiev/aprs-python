@@ -24,6 +24,9 @@ key_map = {
     'L': 'luminosity',
     's': 'snow',
     '#': 'rain_raw',
+    'X': 'radiation',
+    'F': 'water_level',
+    'V': 'battery',
 }
 val_map = {
     'g': lambda x: int(x) * wind_multiplier,
@@ -39,6 +42,9 @@ val_map = {
     'L': lambda x: int(x),
     's': lambda x: float(x) * 25.4,
     '#': lambda x: int(x),
+    'X': lambda x: int(x[0:2]) * (10 ** int(x[2])),  # resistor code to nSv/hr
+    'F': lambda x: float(x) * 0.03048,  # tenths of foot to meters
+    'V': lambda x: int(x) / 10.0,  # tenths to volts
 }
 
 def parse_weather_data(body):
@@ -49,16 +55,23 @@ def parse_weather_data(body):
     body = body.replace('s', 'S', 1)
 
     # match as many parameters from the start, rest is comment
-    data = re.match(r"^([cSgtrpPlLs#][0-9\-\. ]{3}|h[0-9\. ]{2}|b[0-9\. ]{5})+", body)
+    data = re.match(r"^([cSgtrpPlLs#XV][0-9\-\. ]{3}|h[0-9\. ]{2}|b[0-9\. ]{5}|F[\-0-9 ]{4})+", body)
 
     if data:
         data = data.group()
         # split out data from comment
         body = body[len(data):]
         # parse all weather parameters
-        data = re.findall(r"([cSgtrpPlLs#]\d{3}|t-\d{2}|h\d{2}|b\d{5}|s\.\d{2}|s\d\.\d)", data)
+        data = re.findall(r"([cSgtrpPlLs#XV]\d{3}|t-\d{2}|h\d{2}|b\d{5}|s\.\d{2}|s\d\.\d|F-?\d{3,4})", data)
         data = map(lambda x: (key_map[x[0]] , val_map[x[0]](x[1:])), data)
         parsed.update(dict(data))
+
+    # Extract weather software identifier from remaining body
+    # If remaining text is 3-5 alphanumeric chars, it's the software ID
+    remaining = body.strip()
+    if remaining and re.match(r'^[a-zA-Z0-9\-_]{3,5}$', remaining):
+        parsed['wx_software'] = remaining
+        body = ''
 
     return (body, parsed)
 

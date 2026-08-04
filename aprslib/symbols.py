@@ -1,0 +1,235 @@
+"""
+APRS Symbol Table lookup.
+
+Decodes APRS symbol table/code pairs to human-readable descriptions.
+"""
+
+__all__ = ['decode_symbol']
+
+# Primary symbol table (symbol_table = '/')
+PRIMARY_SYMBOLS = {
+    '!': 'Police Station',
+    '"': 'reserved',
+    '#': 'Digi',
+    '$': 'Phone',
+    '%': 'DX Cluster',
+    '&': 'HF Gateway',
+    "'": 'Small Aircraft',
+    '(': 'Mobile Satellite Station',
+    ')': 'Wheelchair',
+    '*': 'Snowmobile',
+    '+': 'Red Cross',
+    ',': 'Boy Scouts',
+    '-': 'House QTH',
+    '.': 'X',
+    '/': 'Red Dot',
+    '0': 'Numbered Circle 0',
+    '1': 'Numbered Circle 1',
+    '2': 'Numbered Circle 2',
+    '3': 'Numbered Circle 3',
+    '4': 'Numbered Circle 4',
+    '5': 'Numbered Circle 5',
+    '6': 'Numbered Circle 6',
+    '7': 'Numbered Circle 7',
+    '8': 'Numbered Circle 8',
+    '9': 'Numbered Circle 9',
+    ':': 'Fire',
+    ';': 'Campground',
+    '<': 'Motorcycle',
+    '=': 'Railroad Engine',
+    '>': 'Car',
+    '?': 'File Server',
+    '@': 'Hurricane/Tropical Storm',
+    'A': 'Aid Station',
+    'B': 'BBS',
+    'C': 'Canoe',
+    'D': 'reserved',
+    'E': 'Eyeball',
+    'F': 'Farm Vehicle (Tractor)',
+    'G': 'Grid Square (6 digit)',
+    'H': 'Hotel',
+    'I': 'TCP/IP',
+    'J': 'reserved',
+    'K': 'School',
+    'L': 'PC User',
+    'M': 'Mac Aprs',
+    'N': 'NTS Station',
+    'O': 'Balloon',
+    'P': 'Police',
+    'Q': 'TBD',
+    'R': 'Recreational Vehicle',
+    'S': 'Space Shuttle',
+    'T': 'SSTV',
+    'U': 'Bus',
+    'V': 'ATV',
+    'W': 'National Weather Service',
+    'X': 'Helicopter',
+    'Y': 'Yacht (Sail Boat)',
+    'Z': 'WinAPRS',
+    '[': 'Jogger',
+    '\\': 'Triangle (DF)',
+    ']': 'PBBS',
+    '^': 'Large Aircraft',
+    '_': 'Weather Station',
+    '`': 'Dish Antenna',
+    'a': 'Ambulance',
+    'b': 'Bike',
+    'c': 'Incident Command Post',
+    'd': 'Fire Dept',
+    'e': 'Horse (equestrian)',
+    'f': 'Fire Truck',
+    'g': 'Glider',
+    'h': 'Hospital',
+    'i': 'IOTA',
+    'j': 'Jeep',
+    'k': 'Truck',
+    'l': 'Laptop',
+    'm': 'Mic-E Repeater',
+    'n': 'Node',
+    'o': 'EOC',
+    'p': 'Rover (Dog)',
+    'q': 'Grid Square (4 digit)',
+    'r': 'Antenna',
+    's': 'Power Boat',
+    't': 'Truck Stop',
+    'u': 'Truck (18 Wheeler)',
+    'v': 'Van',
+    'w': 'Water Station',
+    'x': 'xAPRS (Unix)',
+    'y': 'Yagi at QTH',
+    'z': 'Shelter',
+    '{': 'reserved',
+    '|': 'TNC Stream Switch',
+    '}': 'reserved',
+    '~': 'TNC Stream Switch',
+}
+
+# Alternate symbol table (symbol_table = '\\')
+ALTERNATE_SYMBOLS = {
+    '!': 'Emergency',
+    '"': 'reserved',
+    '#': 'Digi (with overlay)',
+    '$': 'Bank/ATM',
+    '%': 'reserved',
+    '&': 'Diamond (overlay)',
+    "'": 'Crash Site',
+    '(': 'Cloudy',
+    ')': 'Firenet MEO',
+    '*': 'Snow',
+    '+': 'Church',
+    ',': 'Girl Scouts',
+    '-': 'House (HF)',
+    '.': 'Ambiguous',
+    '/': 'reserved',
+    '0': 'Numbered Circle (overlay)',
+    '1': 'reserved',
+    '2': 'reserved',
+    '3': 'reserved',
+    '4': 'reserved',
+    '5': 'reserved',
+    '6': 'reserved',
+    '7': 'reserved',
+    '8': 'reserved',
+    '9': 'Gas Station',
+    ':': 'Hail',
+    ';': 'Park/Picnic',
+    '<': 'Advisory (single flag)',
+    '=': 'reserved',
+    '>': 'Car (overlay)',
+    '?': 'Info Kiosk',
+    '@': 'Hurricane/Tropical Storm',
+    'A': 'Box (overlay)',
+    'B': 'Blowing Snow',
+    'C': 'Coast Guard',
+    'D': 'Drizzle',
+    'E': 'Smoke',
+    'F': 'Freezing Rain',
+    'G': 'Snow Shower',
+    'H': 'Haze',
+    'I': 'Rain Shower',
+    'J': 'Lightning',
+    'K': 'Kenwood',
+    'L': 'Lighthouse',
+    'M': 'reserved',
+    'N': 'Navigation Buoy',
+    'O': 'Rocket',
+    'P': 'Parking',
+    'Q': 'Earthquake',
+    'R': 'Restaurant',
+    'S': 'Satellite/Pacsat',
+    'T': 'Thunderstorm',
+    'U': 'Sunny',
+    'V': 'VORTAC Nav Aid',
+    'W': 'NWS Site (overlay)',
+    'X': 'Pharmacy',
+    'Y': 'reserved',
+    'Z': 'reserved',
+    '[': 'Wall Cloud',
+    '\\': 'reserved',
+    ']': 'reserved',
+    '^': 'reserved',
+    '_': 'WX Station (with overlay)',
+    '`': 'Rain',
+    'a': 'ARRL/ARES',
+    'b': 'Blowing Dust/Sand',
+    'c': 'Civil Defense/RACES',
+    'd': 'DX Spot',
+    'e': 'Sleet',
+    'f': 'Funnel Cloud',
+    'g': 'Gale Flags',
+    'h': 'Ham Store',
+    'i': 'Indoor POI',
+    'j': 'Work Zone',
+    'k': 'SUV/ATV',
+    'l': 'Area (with overlay)',
+    'm': 'Signpost',
+    'n': 'Triangle (with overlay)',
+    'o': 'Small Circle',
+    'p': 'Partly Cloudy',
+    'q': 'reserved',
+    'r': 'Restrooms',
+    's': 'Ship/Boat (top view)',
+    't': 'Tornado',
+    'u': 'Truck (overlay)',
+    'v': 'Van (overlay)',
+    'w': 'Flooding',
+    'x': 'reserved',
+    'y': 'Skywarn',
+    'z': 'Shelter (overlay)',
+    '{': 'Fog',
+    '|': 'TNC Stream Switch',
+    '}': 'reserved',
+    '~': 'TNC Stream Switch',
+}
+
+
+def decode_symbol(symbol_table, symbol_code):
+    """
+    Decode APRS symbol table/code to human-readable description.
+    
+    Args:
+        symbol_table: '/' for primary, '\\' for alternate, 
+                     or overlay char (0-9, A-Z)
+        symbol_code: Single character symbol code
+    
+    Returns:
+        Dict with 'description' and optional 'overlay' keys.
+    """
+    result = {}
+    
+    # Determine which table to look up
+    if symbol_table == '/':
+        desc = PRIMARY_SYMBOLS.get(symbol_code, 'Unknown')
+        result['description'] = desc
+    elif symbol_table == '\\':
+        desc = ALTERNATE_SYMBOLS.get(symbol_code, 'Unknown')
+        result['description'] = desc
+    elif symbol_table in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+        # Overlay character - use alternate table
+        desc = ALTERNATE_SYMBOLS.get(symbol_code, 'Unknown')
+        result['description'] = desc
+        result['overlay'] = symbol_table
+    else:
+        result['description'] = 'Unknown'
+    
+    return result

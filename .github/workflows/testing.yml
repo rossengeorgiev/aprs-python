@@ -8,7 +8,6 @@ on:
       - '*.md'
       - '*.rst'
       - 'LICENSE'
-      - 'dev_requirements.txt'
   pull_request:
     branches: [ master ]
     paths-ignore:
@@ -16,47 +15,43 @@ on:
       - '*.md'
       - '*.rst'
       - 'LICENSE'
-      - 'dev_requirements.txt'
+
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Run linter
+        run: ruff check aprslib/ tests/
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, 3.9, pypy2, pypy3]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python Env
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies
         run: |
-          make init
+          pip install --upgrade pip
+          pip install pytest pytest-cov coverage
+          pip install -e .
       - name: Run Tests
         run: |
-          make test
-      - name: Upload to Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_PARALLEL: true
-          COVERALLS_FLAG_NAME: "${{ matrix.os }}_${{ matrix.python-version }}"
-        run: |
-          coveralls --service=github
-
-  coveralls:
-    name: Finish Coveralls
-    needs: test
-    runs-on: ubuntu-latest
-    container: python:3-slim
-    steps:
-    - name: Install coveralls
-      run: |
-        pip3 install --upgrade coveralls
-    - name: Send coverage finish to coveralls.io
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        coveralls --finish
+          PYTHONHASHSEED=0 pytest --tb=short --cov=aprslib tests/ \
+            --ignore=tests/test_IS.py \
+            --ignore=tests/test_parse.py

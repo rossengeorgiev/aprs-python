@@ -13,7 +13,10 @@ __all__ = [
     'parse_comment',
     'parse_data_extentions',
     'parse_comment_altitude',
+    'parse_comment_frequency',
     'parse_dao',
+    'parse_area_data_extension',
+    'parse_signpost_comment',
     ]
 
 def validate_callsign(callsign, prefix=""):
@@ -121,6 +124,9 @@ def parse_comment(body, parsed):
     body, result = parse_comment_altitude(body)
     parsed.update(result)
 
+    body, result = parse_comment_frequency(body)
+    parsed.update(result)
+
     body, result = parse_comment_telemetry(body)
     parsed.update(result)
 
@@ -129,7 +135,9 @@ def parse_comment(body, parsed):
     if len(body) > 0 and body[0] == "/":
         body = body[1:]
 
-    parsed.update({'comment': body.strip(' ')})
+    # Strip control characters (bytes < 0x20 except tab) and trim whitespace
+    body = ''.join(c for c in body if ord(c) >= 0x20 or c == '\t')
+    parsed.update({'comment': body.strip()})
 
 
 def parse_data_extentions(body):
@@ -161,40 +169,58 @@ def parse_data_extentions(body):
             if nrq.isdigit():
                 parsed.update({'nrq': int(nrq)})
     else:
-        # PHG format: PHGabcd....
-        # RHGR format: RHGabcdr/....
-        match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d)([0-9A-Z]\/)?)", body)
+        # DFS format: DFSshgd
+        match = re.findall(r"^DFS(\d)([\x30-\x7e])(\d)(\d)", body)
         if match:
-            ext, phg, phgr = match[0]
-            body = body[len(ext):]
+            s, h, g, d = match[0]
+            body = body[7:]
+
+            height_code = ord(h) - 0x30
+            height_ft = 10 * (2 ** height_code)
+
+            directivity = int(d) * 45 if int(d) > 0 else 0
+
             parsed.update({
-                'phg': phg,
-                'phg_power': int(phg[0]) ** 2, # watts
-                'phg_height': (10 * (2 ** (ord(phg[1]) - 0x30))) * 0.3048, # in meters
-                'phg_gain': 10 ** (int(phg[2]) / 10.0), # dB
-                })
-
-            phg_dir = int(phg[3])
-            if phg_dir == 0:
-                phg_dir = 'omni'
-            elif phg_dir == 9:
-                phg_dir = 'invalid'
-            else:
-                phg_dir = 45 * phg_dir
-
-            parsed['phg_dir'] = phg_dir
-            # range in km
-            parsed['phg_range'] = sqrt(2 * (parsed['phg_height'] / 0.3048)
-                                       * sqrt((parsed['phg_power'] / 10.0)
-                                               * (parsed['phg_gain'] / 2.0)
-                                              )
-                                       ) * 1.60934
-
-            if phgr:
-                # PHG rate per hour
-                parsed['phg'] += phgr[0]
-                parsed.update({'phg_rate': int(phgr[0], 16)}) # as decimal
+                'df_signal': int(s),
+                'df_height': height_ft * 0.3048,  # meters
+                'df_gain': int(g),
+                'df_directivity': directivity if int(d) > 0 else 'omni',
+            })
         else:
+            # PHG format: PHGabcd....
+            # RHGR format: RHGabcdr/....
+            match = re.findall(r"^(PHG(\d[\x30-\x7e]\d\d)([0-9A-F]\/)?)", body)
+            if match:
+                ext, phg, phgr = match[0]
+                body = body[len(ext):]
+                parsed.update({
+                    'phg': phg,
+                    'phg_power': int(phg[0]) ** 2, # watts
+                    'phg_height': (10 * (2 ** (ord(phg[1]) - 0x30))) * 0.3048, # in meters
+                    'phg_gain': 10 ** (int(phg[2]) / 10.0), # dB
+                    })
+
+                phg_dir = int(phg[3])
+                if phg_dir == 0:
+                    phg_dir = 'omni'
+                elif phg_dir == 9:
+                    phg_dir = 'invalid'
+                else:
+                    phg_dir = 45 * phg_dir
+
+                parsed['phg_dir'] = phg_dir
+                # range in km
+                parsed['phg_range'] = sqrt(2 * (parsed['phg_height'] / 0.3048)
+                                           * sqrt((parsed['phg_power'] / 10.0)
+                                                   * (parsed['phg_gain'] / 2.0)
+                                                  )
+                                           ) * 1.60934
+
+                if phgr:
+                    # PHG rate per hour
+                    parsed['phg'] += phgr[0]
+                    parsed.update({'phg_rate': int(phgr[0], 16)}) # as decimal
+            else:
                 match = re.findall(r"^RNG(\d{4})", body)
                 if match:
                     rng = match[0]
@@ -212,6 +238,53 @@ def parse_comment_altitude(body):
         parsed.update({'altitude': int(altitude)*0.3048})
 
     return body, parsed
+
+
+def parse_comment_frequency(body):
+    """
+    Extract frequency/tone/offset info from position comment.
+    APRS 1.2 frequency spec format.
+    """
+    parsed = {}
+
+    # Match frequency: FFF.FFFMHz or FFF.FF MHz (case-insensitive)
+    freq_match = re.match(r'^(\d{3}\.\d{2,3})\s?[Mm][Hh][Zz]', body)
+    if not freq_match:
+        return (body, parsed)
+
+    parsed['frequency'] = float(freq_match.group(1))
+    body = body[freq_match.end():]
+
+    # Parse optional tone: Tnnn or tnnn (lowercase = narrow)
+    tone_match = re.match(r'^\s+[Tt](\d{3})', body)
+    if tone_match:
+        parsed['tone'] = int(tone_match.group(1))
+        body = body[tone_match.end():]
+
+    # Parse optional DCS: Dnnn
+    dcs_match = re.match(r'^\s+[Dd](\d{3})', body)
+    if dcs_match:
+        parsed['dcs'] = int(dcs_match.group(1))
+        body = body[dcs_match.end():]
+
+    # Parse optional offset: +nnn or -nnn (in 10s of KHz)
+    offset_match = re.match(r'^\s+([+-]\d{3})', body)
+    if offset_match:
+        parsed['offset'] = int(offset_match.group(1)) * 10  # convert to KHz
+        body = body[offset_match.end():]
+
+    # Parse optional range: Rnnm or Rnnk
+    range_match = re.match(r'^\s+[Rr](\d{2,3})([mk])', body)
+    if range_match:
+        range_val = int(range_match.group(1))
+        range_unit = range_match.group(2)
+        if range_unit == 'm':
+            parsed['range'] = range_val * 1.609344  # miles to km
+        else:
+            parsed['range'] = float(range_val)
+        body = body[range_match.end():]
+
+    return (body, parsed)
 
 
 def parse_dao(body, parsed):
@@ -234,3 +307,55 @@ def parse_dao(body, parsed):
         parsed['longitude'] += lon_offset if parsed['longitude'] >= 0 else -lon_offset
 
     return body
+
+
+AREA_TYPES = {
+    0: 'circle', 1: 'line', 2: 'ellipse', 3: 'triangle', 4: 'rectangle',
+    5: 'circle', 6: 'line', 7: 'ellipse', 8: 'triangle', 9: 'rectangle',
+}
+
+AREA_COLORS = {
+    0: 'black', 1: 'blue', 2: 'green', 3: 'cyan',
+    4: 'red', 5: 'violet', 6: 'yellow', 7: 'grey',
+}
+
+
+def parse_area_data_extension(body):
+    """Parse area object data extension. Format: Tyy/Cxx"""
+    parsed = {}
+    match = re.match(r'^(\d)(\d{2})/(\d)(\d{2})', body)
+    if match:
+        type_id = int(match.group(1))
+        lat_offset = int(match.group(2))
+        color_id = int(match.group(3))
+        lon_offset = int(match.group(4))
+        body = body[7:]
+
+        parsed['area_object'] = {
+            'type': AREA_TYPES.get(type_id, 'unknown'),
+            'type_id': type_id,
+            'filled': type_id >= 5,
+            'color': AREA_COLORS.get(color_id, 'unknown'),
+            'color_id': color_id,
+            'lat_offset': lat_offset / 60.0,
+            'lon_offset': lon_offset / 60.0,
+        }
+    return (body, parsed)
+
+
+def parse_signpost_comment(body):
+    """Parse signpost object comment. Format: SSS/DDD text"""
+    parsed = {}
+    match = re.match(r'^(\d{3})/(\d{3})\s*(.*)', body)
+    if match:
+        speed_mph = int(match.group(1))
+        bearing = int(match.group(2))
+        text = match.group(3)
+        parsed['signpost'] = {
+            'speed': speed_mph * 1.609344,
+            'speed_mph': speed_mph,
+            'bearing': bearing,
+            'text': text.strip(),
+        }
+        body = ''
+    return (body, parsed)

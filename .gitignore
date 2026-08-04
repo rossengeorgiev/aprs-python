@@ -5,3 +5,5 @@ dist
 *.egg-info
 env3
 env2
+.idea/
+.python-version

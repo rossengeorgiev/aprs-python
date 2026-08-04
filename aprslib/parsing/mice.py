@@ -32,12 +32,65 @@ MTYPE_TABLE_CUSTOM = {
     "000": "Emergency",
     }
 
+# Mic-E device type suffixes (check 2-char first, then 1-char)
+MICE_DEVICE_SUFFIX_2 = {
+    '>=': 'Kenwood TH-D72',
+    '>^': 'Kenwood TH-D74',
+    ']=': 'Kenwood TM-D710',
+    '_ ': 'Yaesu VX-8',
+    '_"': 'Yaesu FTM-350',
+    '_#': 'Yaesu VX-8G',
+    '_$': 'Yaesu FT1D',
+    '_%': 'Yaesu FTM-400DR',
+    '_)': 'Yaesu FTM-100D',
+    '_(': 'Yaesu FT2D',
+    '_0': 'Yaesu FT3D',
+    '_3': 'Yaesu FT5D',
+    '_1': 'Yaesu FTM-300D',
+    '(5': 'Anytone D578UV',
+    '(8': 'Anytone D878UV',
+    '|3': 'Byonics TinyTrack3',
+    '|4': 'Byonics TinyTrack4',
+    ':4': 'SCS P4dragon DR-7400',
+}
+MICE_DEVICE_SUFFIX_1 = {
+    '>': 'Kenwood TH-D7A',
+    ']': 'Kenwood TM-D700',
+}
+
 # Mic-encoded packet
 #
+def _fix_broken_mice(body):
+    """
+    Attempt to fix a broken Mic-E packet.
+
+    Some IGate software (notably certain versions of javAPRSSrvr and aprsd)
+    replaces non-printable characters in the Mic-E data with spaces (0x20).
+    Space (0x20) is valid for positions 2-5 (range [\x1c-\x7f]), but
+    positions 0 and 1 require values >= 0x26 ('&'). This function replaces
+    spaces in those two positions with '&' (the lowest valid value).
+    The decoded longitude is then approximate.
+
+    Returns the fixed body string or None if unfixable.
+    """
+    if not body or len(body) < 8:
+        return None
+
+    # Convert to mutable list
+    body_list = list(body)
+
+    # Only positions 0 and 1 need repair: valid range starts at '&' (0x26)
+    for i in range(2):
+        if body_list[i] == ' ':
+            body_list[i] = chr(0x26)  # '&' = lowest valid for positions 0 and 1
+
+    return ''.join(body_list)
+
+
 # 'lllc/s$/.........         Mic-E no message capability
 # 'lllc/s$/>........         Mic-E message capability
 # `lllc/s$/>........         Mic-E old posit
-def parse_mice(dstcall, body):
+def parse_mice(dstcall, body, accept_broken=False):
     parsed = {'format': 'mic-e'}
 
     dstcall = dstcall.split('-')[0]
@@ -51,7 +104,18 @@ def parse_mice(dstcall, body):
         raise ParseError("invalid dstcall")
     if not re.match(r"^[&-\x7f][&-a][\x1c-\x7f]{2}[\x1c-\x7d]"
                     r"[\x1c-\x7f][\x21-\x7e][\/\\0-9A-Z]", body):
-        raise ParseError("invalid data format")
+        # Try to fix broken mic-e packets if enabled
+        # Some IGate software replaces non-printable chars (0x1c-0x1f) with spaces
+        if accept_broken and ' ' in body[:6]:
+            fixed_body = _fix_broken_mice(body)
+            if fixed_body and re.match(r"^[&-\x7f][&-a][\x1c-\x7f]{2}[\x1c-\x7d]"
+                                        r"[\x1c-\x7f][\x21-\x7e][\/\\0-9A-Z]", fixed_body):
+                body = fixed_body
+                parsed['mice_fixed'] = True
+            else:
+                raise ParseError("invalid data format")
+        else:
+            raise ParseError("invalid data format")
 
     # get symbol table and symbol
     parsed.update({
@@ -216,5 +280,14 @@ def parse_mice(dstcall, body):
 
         # rest is a comment
         parsed.update({'comment': body.strip(' ')})
+
+        # Detect device type from comment suffix
+        comment = parsed.get('comment', '')
+        if len(comment) >= 2 and comment[-2:] in MICE_DEVICE_SUFFIX_2:
+            parsed['device'] = MICE_DEVICE_SUFFIX_2[comment[-2:]]
+            parsed['comment'] = comment[:-2].rstrip(' ')
+        elif len(comment) >= 1 and comment[-1:] in MICE_DEVICE_SUFFIX_1:
+            parsed['device'] = MICE_DEVICE_SUFFIX_1[comment[-1:]]
+            parsed['comment'] = comment[:-1].rstrip(' ')
 
     return ('', parsed)

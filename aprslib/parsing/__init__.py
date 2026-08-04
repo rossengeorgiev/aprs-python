@@ -43,22 +43,19 @@ from aprslib.parsing.message import *
 from aprslib.parsing.telemetry import *
 from aprslib.parsing.thirdparty import *
 from aprslib.parsing.weather import *
+from aprslib.parsing.query import *
+from aprslib.parsing.nws import *
+from aprslib.parsing.peetbros import *
+from aprslib.parsing.dx import *
 
 unsupported_formats = {
-        '#':'raw weather report',
-        '$':'raw gps',
         '%':'agrelo',
         '&':'reserved',
         '(':'unused',
-        ')':'item report',
-        '*':'complete weather report',
         '+':'reserved',
         '-':'unused',
         '.':'reserved',
-        '<':'station capabilities',
-        '?':'general query format',
-        'T':'telemetry report',
-        '[':'maidenhead locator beacon',
+
         '\\':'unused',
         ']':'unused',
         '^':'unused',
@@ -126,7 +123,7 @@ def parse(packet):
     packet_type = body[0]
     body = body[1:]
 
-    if len(body) == 0 and packet_type != '>':
+    if len(body) == 0 and packet_type not in '><$[':
         raise ParseError("packet body is empty after packet type character", packet)
 
     # attempt to parse the body
@@ -158,6 +155,15 @@ def parse(packet):
 def _try_toparse_body(packet_type, body, parsed):
     result = {}
 
+    # DX spot: check full body (packet_type + body) for "DX de" pattern
+    # before normal DTI dispatch (per FAP.pm behavior)
+    full_body = packet_type + body
+    if re.match(r'^DX\s+de\s+', full_body, re.IGNORECASE):
+        logger.debug("Attempting to parse as DX spot")
+        _, result = parse_dx(full_body)
+        parsed.update(result)
+        return
+
     if packet_type in unsupported_formats:
         raise UnknownFormat("Format is not supported: '{}' {}".format(packet_type, unsupported_formats[packet_type]))
 
@@ -178,6 +184,12 @@ def _try_toparse_body(packet_type, body, parsed):
 
         body, result = parse_user_defined(body)
 
+    # General query
+    elif packet_type == '?':
+        logger.debug("Attempting to parse as query packet")
+
+        body, result = parse_query(body)
+
     # Status report
     elif packet_type == '>':
         logger.debug("Packet is just a status message")
@@ -189,6 +201,11 @@ def _try_toparse_body(packet_type, body, parsed):
         logger.debug("Attempting to parse as mic-e packet")
 
         body, result = parse_mice(parsed['to'], body)
+
+    # Peet Bros raw weather report
+    elif packet_type == '#':
+        logger.debug("Attempting to parse as Peet Bros raw weather")
+        body, result = parse_peetbros(body)
 
     # Message packet
     elif packet_type == ':':
@@ -202,7 +219,48 @@ def _try_toparse_body(packet_type, body, parsed):
 
         body, result = parse_weather(body)
 
+    # Telemetry report
+    elif packet_type == 'T':
+        logger.debug("Attempting to parse as telemetry report")
+
+        body, result = parse_telemetry_report(body)
+
+    # Station capabilities
+    elif packet_type == '<':
+        logger.debug("Attempting to parse as station capabilities")
+
+        body, result = parse_station_capabilities(body)
+
+    # Raw GPS
+    elif packet_type == '$':
+        logger.debug("Attempting to parse as raw GPS")
+
+        body, result = parse_raw_gps(body)
+
+    # Maidenhead locator beacon
+    elif packet_type == '[':
+        logger.debug("Attempting to parse as maidenhead locator beacon")
+
+        body, result = parse_maidenhead_locator(body)
+
+    # Item report
+    elif packet_type == ')':
+        logger.debug("Attempting to parse as item report")
+
+        body, result = parse_position(packet_type, body)
+
+    # Complete weather report (position report with weather data)
+    elif packet_type == '*':
+        logger.debug("Attempting to parse as complete weather report (position)")
+
+        body, result = parse_position(packet_type, body)
+
     # postion report (regular or compressed)
+    # Check for Peet Bros !! logging frame first (packet_type=! and body starts with !)
+    elif packet_type == '!' and body and body[0] == '!':
+        logger.debug("Attempting to parse as Peet Bros !! logging frame")
+        body, result = parse_peetbros_logging(body[1:])
+
     elif (packet_type in '!=/@;' or
           0 <= body.find('!') < 40):  # page 28 of spec (PDF)
 

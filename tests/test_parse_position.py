@@ -166,5 +166,35 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
         _, result = parse_position(packet_type, packet)
         self.assertEqual(expected, result)
 
+    def test_position_with_trailing_space_in_minutes(self):
+        """Test position packet with trailing space in minutes field (real-world packet)"""
+        from aprslib.parsing import parse
+        packet = "N0NPO-2>APWW11,TCPIP*,qAC,T2SYDNEY:@215527h4424.4 N/10017.85W#"
+        result = parse(packet)
+
+        self.assertEqual(result['format'], 'uncompressed')
+        self.assertAlmostEqual(result['latitude'], 44.406666666666666, places=5)
+        self.assertAlmostEqual(result['longitude'], -100.2975, places=5)
+        self.assertEqual(result['posambiguity'], 0)  # Trailing spaces don't count as ambiguity
+        self.assertEqual(result['symbol_table'], '/')
+        self.assertEqual(result['symbol'], '#')
+        self.assertIn('timestamp', result)
+
+    def test_complete_weather_report_with_position(self):
+        """Test complete weather report (*) packet with position data (real-world packet)"""
+        from aprslib.parsing import parse
+        packet = "KC8MSE-1>BEACON,qAR,KD8EHO-10:*111111z4328.18N/08554.76Wr146.920MHz_T094_-_R35m Fremont Rptr*"
+        result = parse(packet)
+
+        self.assertEqual(result['format'], 'uncompressed')
+        self.assertAlmostEqual(result['latitude'], 43.46966666666667, places=5)
+        self.assertAlmostEqual(result['longitude'], -85.91266666666667, places=5)
+        self.assertEqual(result['posambiguity'], 0)
+        self.assertEqual(result['symbol_table'], '/')
+        self.assertEqual(result['symbol'], 'r')
+        self.assertIn('timestamp', result)
+        self.assertAlmostEqual(result['frequency'], 146.920)
+        self.assertEqual(result['comment'], '_T094_-_R35m Fremont Rptr*')
+
 if __name__ == '__main__':
     unittest.main()

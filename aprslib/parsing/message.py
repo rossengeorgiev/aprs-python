@@ -62,6 +62,20 @@ def parse_message(body):
 
         parsed.update({'addresse': addresse.rstrip(' ')})
 
+        # Check for Item-in-Message format (body starts with ')')
+        if body.startswith(')'):
+            from aprslib.parsing.position import parse_position
+            try:
+                _, item_result = parse_position(')', body[1:])
+                parsed.update({
+                    'format': 'item-in-message',
+                    'item': item_result,
+                })
+            except Exception:
+                pass  # Not a valid item, continue with normal parsing
+            if 'item' in parsed:
+                break
+
         # check if it's a telemetry configuration message
         body, result = parse_telemetry_config(body)
         if result:
