@@ -98,6 +98,9 @@ def parse_compressed(body):
         body = body[13:]
 
         symbol_table = compressed[0]
+        # APRS101: compressed numeric overlays use a-j instead of 0-9.
+        if 'a' <= symbol_table <= 'j':
+            symbol_table = chr(ord('0') + ord(symbol_table) - ord('a'))
         symbol = compressed[9]
 
         try:

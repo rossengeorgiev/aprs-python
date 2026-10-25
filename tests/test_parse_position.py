@@ -166,5 +166,18 @@ class ParsePositionDataExtAndWeather(unittest.TestCase):
         _, result = parse_position(packet_type, packet)
         self.assertEqual(expected, result)
 
+class ParseCompressedPosition(unittest.TestCase):
+    def test_numeric_symbol_overlays(self):
+        for encoded, expected in zip('abcdefghij', '0123456789'):
+            _, result = parse_position('!', encoded + '5L!!<*e7#7P[')
+            self.assertEqual(expected, result['symbol_table'])
+            self.assertEqual('#', result['symbol'])
+
+    def test_other_symbol_tables(self):
+        for symbol_table in '/\\ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+            _, result = parse_position('!', symbol_table + '5L!!<*e7#7P[')
+            self.assertEqual(symbol_table, result['symbol_table'])
+
+
 if __name__ == '__main__':
     unittest.main()
